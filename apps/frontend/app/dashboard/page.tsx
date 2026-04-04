@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuthState } from "@/lib/auth";
 import { useAuthenticatedGameSocket } from "@/lib/socket";
 import { useSession } from "@/lib/session";
+import { QuizArenaSection } from "@/components/dashboard/QuizArenaSection";
 import {
   Calculator, Code2, BarChart2, Grid3x3,
   Bot, Eye, Shield, TrendingUp,
@@ -16,13 +17,18 @@ import {
   Trophy, Radio, Users, Plus
 } from 'lucide-react';
 
-const NAV_ITEMS = [
-  { icon: Gamepad2, label: 'ARENA', active: true },
-  { icon: ClipboardList, label: 'QUESTS', active: false },
-  { icon: Trophy, label: 'COMPETE', active: false },
-  { icon: Radio, label: 'FEED', active: false },
-  { icon: Users, label: 'GROUP PLAY', active: false },
-  { icon: Plus, label: 'MORE', active: false },
+const NAV_ITEMS: {
+  icon: typeof Gamepad2;
+  label: string;
+  active: boolean;
+  scrollToQuiz?: boolean;
+}[] = [
+  { icon: Gamepad2, label: "ARENA", active: true, scrollToQuiz: true },
+  { icon: ClipboardList, label: "QUESTS", active: false },
+  { icon: Trophy, label: "COMPETE", active: false },
+  { icon: Radio, label: "FEED", active: false },
+  { icon: Users, label: "GROUP PLAY", active: false },
+  { icon: Plus, label: "MORE", active: false },
 ];
 
 const CATEGORIES = ['MATH', 'AI/ML', 'ELECTRONICS', 'BONUS'] as const;
@@ -92,6 +98,7 @@ const Home = () => {
   const { token } = useSession();
   const { isLoading, isAuthenticated, user } = useAuthState();
   const createOrUpdateUser = useMutation(api.users.createOrUpdateUser);
+  const leaderboard = useQuery(api.quizGame.getLeaderboard, { limit: 8 });
   const { connected: socketConnected, error: socketError } =
     useAuthenticatedGameSocket();
   const [activeTab, setActiveTab] = useState<Category>("MATH");
@@ -124,7 +131,7 @@ const Home = () => {
   const score = user.score ?? 0;
 
   return (
-    <div className="flex flex-col h-screen bg-[#010828] relative">
+    <div className="relative flex h-[100dvh] min-h-0 flex-col bg-[#010828]">
       {/* Background video */}
       <video autoPlay loop muted playsInline className="fixed inset-0 w-full h-full object-cover z-0 opacity-15">
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4" type="video/mp4" />
@@ -138,7 +145,9 @@ const Home = () => {
 
       {/* TOP BAR */}
       <header className="liquid-glass border-b border-white/10 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
-        <Link href="/" className="font-anton text-[16px] uppercase text-cream tracking-wider">EngineX</Link>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="font-anton text-[16px] uppercase text-cream tracking-wider">EngineX</Link>
+        </div>
 
         {/* Current player */}
         <div className="hidden sm:flex items-center gap-3">
@@ -180,29 +189,38 @@ const Home = () => {
           <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-neon">
             🟢 {score}
           </span>
-          <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-cream hidden sm:inline-flex">🔥 0</span>
+          <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-cream hidden sm:inline-flex">🔥 {user.bestStreak ?? 0}</span>
           <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-yellow-400 hidden sm:inline-flex">⭐ 35 XP</span>
         </div>
       </header>
 
-      {/* BODY */}
-      <div className="flex flex-row flex-1 overflow-hidden">
+      {/* BODY — min-h-0 lets flex children shrink so main can scroll */}
+      <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
         {/* LEFT SIDEBAR */}
-        <aside className="hidden lg:flex flex-col w-[240px] liquid-glass border-r border-white/10 py-8 px-4 gap-2 shrink-0">
+        <aside className="hidden min-h-0 shrink-0 flex-col gap-2 overflow-y-auto border-r border-white/10 px-4 py-8 liquid-glass lg:flex lg:w-[240px]">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            const goQuiz = () =>
+              document.getElementById("quiz-arena")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
             return (
-              <div
+              <button
                 key={item.label}
-                className={`flex items-center gap-3 px-4 py-3 rounded-[16px] font-mono text-sm cursor-pointer transition ${
+                type="button"
+                onClick={() => {
+                  if (item.scrollToQuiz) goQuiz();
+                }}
+                className={`flex w-full items-center gap-3 rounded-[16px] px-4 py-3 text-left font-mono text-sm transition ${
                   item.active
-                    ? 'bg-[#6FFF00]/10 text-neon border border-[#6FFF00]/30'
-                    : 'text-cream/70 hover:bg-white/10 hover:text-cream'
+                    ? "cursor-pointer border border-[#6FFF00]/30 bg-[#6FFF00]/10 text-neon"
+                    : "cursor-default text-cream/70 hover:bg-white/10 hover:text-cream"
                 }`}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
-              </div>
+              </button>
             );
           })}
 
@@ -228,23 +246,34 @@ const Home = () => {
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto px-6 py-8">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 pb-24 lg:pb-8">
           <div className="max-w-[1400px]">
             {/* DAILY CHALLENGE */}
             <div className="flex items-center justify-between mb-4">
               <span className="font-anton text-[11px] text-cream/50 uppercase tracking-widest">Daily Challenge</span>
               <span className="font-mono text-neon text-sm">⏱ 07:49</span>
             </div>
-            <div className="flex gap-4 mb-10">
-              <div className="liquid-glass rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition cursor-pointer">
-                <span className="font-anton text-[28px] text-neon">PUZZLE</span>
+            <div className="flex gap-4 mb-8">
+              <button
+                type="button"
+                onClick={() =>
+                  document.getElementById("quiz-arena")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                className="liquid-glass rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition cursor-pointer text-left"
+              >
+                <span className="font-anton text-[28px] text-neon">QUIZ</span>
                 <ChevronRight className="text-cream/50" size={24} />
-              </div>
+              </button>
               <div className="liquid-glass rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition cursor-pointer">
                 <span className="font-anton text-[28px] text-cream">MATH</span>
                 <ChevronRight className="text-cream/50" size={24} />
               </div>
             </div>
+
+            <QuizArenaSection />
 
             {/* GAME CATEGORIES */}
             <span className="font-anton text-[11px] text-cream/50 uppercase tracking-widest">Game Categories</span>
@@ -316,7 +345,32 @@ const Home = () => {
         </main>
 
         {/* RIGHT SIDEBAR */}
-        <aside className="hidden xl:flex flex-col gap-4 w-[320px] p-6 overflow-y-auto border-l border-white/10 shrink-0">
+        <aside className="hidden min-h-0 w-[320px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-white/10 p-6 xl:flex">
+          {leaderboard && leaderboard.length > 0 ? (
+            <div className="liquid-glass flex flex-col gap-2 rounded-[20px] p-5">
+              <div className="flex items-center justify-between">
+                <span className="font-anton text-[13px] uppercase text-cream">
+                  Leaderboard
+                </span>
+                <Trophy size={16} className="text-neon" />
+              </div>
+              {leaderboard.map((row, i) => (
+                <div
+                  key={row.userId}
+                  className="flex items-center justify-between font-mono text-xs text-cream/85"
+                >
+                  <span className="truncate pr-2">
+                    {i + 1}. {row.name}
+                  </span>
+                  <span className="shrink-0 text-neon">{row.score}</span>
+                </div>
+              ))}
+              <p className="mt-1 text-center font-mono text-[10px] text-cream/45">
+                Updates when you finish a run below
+              </p>
+            </div>
+          ) : null}
+
           {/* DAILY QUESTS */}
           <div className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -364,17 +418,31 @@ const Home = () => {
       {/* MOBILE BOTTOM NAV */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 liquid-glass border-t border-white/10 flex justify-around py-3">
         {[
-          { icon: Gamepad2, label: 'Arena', active: true },
-          { icon: ClipboardList, label: 'Quests', active: false },
-          { icon: Trophy, label: 'Compete', active: false },
-          { icon: Radio, label: 'Feed', active: false },
+          { icon: Gamepad2, label: "Arena", active: true, scrollToQuiz: true },
+          { icon: ClipboardList, label: "Quests", active: false },
+          { icon: Trophy, label: "Compete", active: false },
+          { icon: Radio, label: "Feed", active: false },
         ].map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className={`flex flex-col items-center gap-1 cursor-pointer ${item.active ? 'text-neon' : 'text-cream/50'}`}>
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => {
+                if ("scrollToQuiz" in item && item.scrollToQuiz) {
+                  document.getElementById("quiz-arena")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }
+              }}
+              className={`flex flex-col items-center gap-1 ${
+                item.active ? "text-neon" : "text-cream/50"
+              }`}
+            >
               <Icon size={20} />
               <span className="font-mono text-[10px]">{item.label}</span>
-            </div>
+            </button>
           );
         })}
       </nav>

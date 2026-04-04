@@ -3,6 +3,10 @@
 @theme {
   --font-grotesk: var(--font-anton);
   --font-condiment: var(--font-condiment-google);
+
+  /* Used across quiz / dashboard — explicit so text isn’t low-contrast or missing */
+  --color-cream: #e8eeff;
+  --color-neon: #6fff00;
 }
 
 @layer base {

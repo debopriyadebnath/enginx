@@ -1,28 +1,11 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { userIdFromSession } from "./auth/session";
 
 function diceBearAvatarUrl(seed: string): string {
   const s = encodeURIComponent(seed);
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${s}`;
-}
-
-async function userIdFromSession(
-  ctx: QueryCtx | MutationCtx,
-  sessionToken: string | undefined
-): Promise<Id<"users"> | null> {
-  if (!sessionToken) {
-    return null;
-  }
-  const session = await ctx.db
-    .query("sessions")
-    .withIndex("by_token", (q) => q.eq("token", sessionToken))
-    .first();
-  if (!session || session.expiresAt < Date.now()) {
-    return null;
-  }
-  return session.userId;
 }
 
 export const getCurrentUser = query({
@@ -57,6 +40,12 @@ export const createOrUpdateUser = mutation({
     }
     if (existing.score === undefined) {
       updates.score = 0;
+    }
+    if (existing.bestStreak === undefined) {
+      updates.bestStreak = 0;
+    }
+    if (existing.lastStreak === undefined) {
+      updates.lastStreak = 0;
     }
     if (existing.createdAt === undefined) {
       updates.createdAt = now;
