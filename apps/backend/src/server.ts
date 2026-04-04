@@ -22,6 +22,7 @@ export function createServer_() {
     allowEIO3: true,
   });
 
+  // Middleware
   app.use(
     cors({
       origin: corsOrigin,
@@ -30,6 +31,7 @@ export function createServer_() {
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
+
   app.use(express.json());
 
   // Health check endpoint

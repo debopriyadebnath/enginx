@@ -22,7 +22,7 @@ function mapSessionError(err: unknown): string {
 }
 
 /**
- * Socket.IO middleware — opaque session token validated via Convex `sessions:validateSession`.
+ * Socket.IO middleware — validates session token via Convex
  */
 export async function socketAuthMiddleware(
   socket: CustomSocket,
@@ -38,6 +38,7 @@ export async function socketAuthMiddleware(
 
     const { userId } = await verifySessionToken(token);
     socket.data.user = buildSocketUser(userId);
+
     next();
   } catch (error) {
     next(new Error(mapSessionError(error)));
@@ -45,7 +46,7 @@ export async function socketAuthMiddleware(
 }
 
 /**
- * Express — `Authorization: Bearer <session token>` (same Convex session as the app).
+ * Express middleware — Authorization: Bearer <session token>
  */
 export function expressAuthMiddleware(
   req: Request,
@@ -55,6 +56,7 @@ export function expressAuthMiddleware(
   void (async () => {
     try {
       const authHeader = req.headers.authorization;
+
       const bearer = authHeader?.startsWith("Bearer ")
         ? authHeader.slice(7).trim()
         : undefined;
@@ -66,6 +68,7 @@ export function expressAuthMiddleware(
 
       const { userId } = await verifySessionToken(bearer);
       req.user = buildSocketUser(userId);
+
       next();
     } catch (error) {
       res.status(401).json({
