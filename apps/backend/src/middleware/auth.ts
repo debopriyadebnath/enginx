@@ -1,5 +1,31 @@
 import type { CustomSocket } from "../types/types.js";
 
+type ExpressLikeRequest = {
+  headers: Record<string, string | string[] | undefined>;
+  user?: { id: string };
+};
+
+type ExpressLikeResponse = {
+  status: (code: number) => { json: (body: unknown) => void };
+};
+
+export const extractTokenFromSocket = (socket: CustomSocket): string | null => {
+  const raw = socket.handshake.auth?.token;
+  if (typeof raw !== "string") return null;
+
+  const token = raw.trim();
+  return token.length > 0 ? token : null;
+};
+
+export const minimallyValidateToken = (token: string | null): token is string => {
+  if (!token) return false;
+
+  // Hackathon validation: accept any non-empty token/user id with basic length guard.
+  return token.length >= 3;
+};
+
+export const buildSocketUser = (token: string) => ({ id: token });
+
 /**
  * Socket.IO authentication middleware
  * Extracts token from socket.handshake.auth.token and attaches user to socket.data
@@ -8,18 +34,15 @@ import type { CustomSocket } from "../types/types.js";
  */
 export const authMiddleware = (socket: CustomSocket, next: (err?: Error) => void) => {
   try {
-    const token = socket.handshake.auth.token as string;
-
-    if (!token) {
+    const token = extractTokenFromSocket(socket);
+    if (!minimallyValidateToken(token)) {
       return next(new Error("Authentication token required"));
     }
 
     // For hackathon: trust the token format
     // In production: validate against Convex or your auth provider
     // Expected format: JWT or session token from Convex frontend auth
-    socket.data.user = {
-      id: token, // We'll use token as user ID for this hackathon version
-    };
+    socket.data.user = buildSocketUser(token);
 
     next();
   } catch (error) {
@@ -36,21 +59,20 @@ export const authMiddleware = (socket: CustomSocket, next: (err?: Error) => void
  * Extracts token from Authorization header
  */
 export const authExpressMiddleware = (
-  req: any,
-  res: any,
+  req: ExpressLikeRequest,
+  res: ExpressLikeResponse,
   next: (err?: Error) => void
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader?.replace("Bearer ", "");
+    const rawHeader = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+    const token = rawHeader?.replace("Bearer ", "").trim() || null;
 
-    if (!token) {
+    if (!minimallyValidateToken(token)) {
       return res.status(401).json({ error: "Authentication token required" });
     }
 
-    req.user = {
-      id: token,
-    };
+    req.user = buildSocketUser(token);
 
     next();
   } catch (error) {
@@ -59,3 +81,5 @@ export const authExpressMiddleware = (
     });
   }
 };
+
+export const socketAuthMiddleware = authMiddleware;

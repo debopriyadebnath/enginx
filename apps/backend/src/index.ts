@@ -1,8 +1,8 @@
 import "dotenv/config";
 
-import { createServer_ } from "./server.ts";
+import { createServer_ } from "./server.js";
 
-const PORT = parseInt( "8000", 10);
+const PORT = parseInt(process.env.PORT || "8000", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 
 const { app, server, io } = createServer_();

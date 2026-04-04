@@ -7,11 +7,12 @@ import { initializeSocket } from "./socket/socket.js";
 export function createServer_() {
   const app: Express = express();
   const server = createServer(app);
+  const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
 
   // Create Socket.IO server with CORS enabled
   const io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: frontendOrigin,
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -19,7 +20,13 @@ export function createServer_() {
   });
 
   // Middleware
-  app.use(cors());
+  app.use(
+    cors({
+      origin: frontendOrigin,
+      methods: ["GET", "POST"],
+      credentials: true,
+    })
+  );
   app.use(express.json());
 
   // Health check endpoint
