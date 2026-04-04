@@ -1,6 +1,12 @@
-'use client';
-import { useState } from 'react';
-import Link from 'next/link';
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useAuthState } from "@/lib/auth";
+import { useAuthenticatedGameSocket } from "@/lib/socket";
+import { useSession } from "@/lib/session";
 import {
   Calculator, Code2, BarChart2, Grid3x3,
   Bot, Eye, Shield, TrendingUp,
@@ -9,15 +15,6 @@ import {
   CheckCircle, QrCode, Gamepad2, ClipboardList,
   Trophy, Radio, Users, Plus
 } from 'lucide-react';
-
-const AVATARS = [
-  { label: 'YOU', dot: '#6FFF00' },
-  { label: 'A', dot: '#FF6B6B' },
-  { label: 'B', dot: '#4ECDC4' },
-  { label: 'C', dot: '#FFE66D' },
-  { label: 'D', dot: '#A78BFA' },
-  { label: 'E', dot: '#F97316' },
-];
 
 const NAV_ITEMS = [
   { icon: Gamepad2, label: 'ARENA', active: true },
@@ -91,7 +88,40 @@ const QUESTS = [
 ];
 
 const Home = () => {
-  const [activeTab, setActiveTab] = useState<Category>('MATH');
+  const router = useRouter();
+  const { token } = useSession();
+  const { isLoading, isAuthenticated, user } = useAuthState();
+  const createOrUpdateUser = useMutation(api.users.createOrUpdateUser);
+  const { connected: socketConnected, error: socketError } =
+    useAuthenticatedGameSocket();
+  const [activeTab, setActiveTab] = useState<Category>("MATH");
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      void createOrUpdateUser({ sessionToken: token });
+    }
+  }, [isAuthenticated, token, createOrUpdateUser]);
+
+  if (isLoading || !isAuthenticated || user === undefined) {
+    return (
+      <div className="flex flex-col h-screen bg-[#010828] items-center justify-center">
+        <p className="font-mono text-cream/70 text-sm">Loading…</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const displayName = user.name ?? user.email ?? "Player";
+  const score = user.score ?? 0;
 
   return (
     <div className="flex flex-col h-screen bg-[#010828] relative">
@@ -110,19 +140,46 @@ const Home = () => {
       <header className="liquid-glass border-b border-white/10 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
         <Link href="/" className="font-anton text-[16px] uppercase text-cream tracking-wider">EngineX</Link>
 
-        {/* Center avatars */}
-        <div className="hidden sm:flex items-center gap-2">
-          {AVATARS.map((a, i) => (
-            <div key={i} className="relative w-10 h-10 bg-white/10 liquid-glass rounded-full flex items-center justify-center">
-              <span className="font-anton text-[10px] text-cream">{a.label}</span>
-              <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full" style={{ backgroundColor: a.dot }} />
-            </div>
-          ))}
+        {/* Current player */}
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="relative w-10 h-10 bg-white/10 liquid-glass rounded-full overflow-hidden flex items-center justify-center shrink-0">
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="font-anton text-[10px] text-cream">
+                {displayName.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <span
+              className="absolute bottom-0 right-0 w-2 h-2 rounded-full"
+              style={{ backgroundColor: "#6FFF00" }}
+            />
+          </div>
+          <span className="font-mono text-cream/80 text-sm max-w-[160px] truncate">
+            {displayName}
+          </span>
         </div>
 
         {/* Right badges */}
         <div className="flex items-center gap-2">
-          <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-neon">🟢 500</span>
+          <span
+            className="liquid-glass rounded-full px-3 py-1 font-mono text-xs text-cream/80 hidden md:inline-flex max-w-[200px] truncate"
+            title={socketError ?? undefined}
+          >
+            {socketError
+              ? `Server: ${socketError}`
+              : socketConnected
+                ? "Game server: live"
+                : "Game server: …"}
+          </span>
+          <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-neon">
+            🟢 {score}
+          </span>
           <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-cream hidden sm:inline-flex">🔥 0</span>
           <span className="liquid-glass rounded-full px-3 py-1 font-mono text-sm text-yellow-400 hidden sm:inline-flex">⭐ 35 XP</span>
         </div>
@@ -150,10 +207,23 @@ const Home = () => {
           })}
 
           <div className="mt-auto flex items-center gap-3 px-4 pt-6">
-            <div className="w-9 h-9 bg-white/10 liquid-glass rounded-full flex items-center justify-center">
-              <span className="font-anton text-[10px] text-cream">U</span>
+            <div className="w-9 h-9 bg-white/10 liquid-glass rounded-full overflow-hidden flex items-center justify-center shrink-0">
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-anton text-[10px] text-cream">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </span>
+              )}
             </div>
-            <span className="font-anton text-[13px] text-cream uppercase">User</span>
+            <span className="font-anton text-[13px] text-cream uppercase truncate max-w-[140px]">
+              {displayName}
+            </span>
           </div>
         </aside>
 

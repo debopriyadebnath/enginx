@@ -7,7 +7,10 @@ export interface ConvexUser {
 }
 
 export interface SocketUser {
+  /** Convex `users` id from verified JWT `sub` claim */
   id: string;
+  /** From JWT `sub` after `|` (Convex Auth session) */
+  sessionId?: string;
 }
 
 export interface Player {

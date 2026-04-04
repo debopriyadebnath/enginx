@@ -1,32 +1,37 @@
-import express, { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { initializeSocket } from "./socket/socket.js";
+import { getFrontendOrigins } from "./config/cors.js";
 
 export function createServer_() {
   const app: Express = express();
   const server = createServer(app);
-  const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
 
-  // Create Socket.IO server with CORS enabled
+  const corsOrigin = getFrontendOrigins();
+
   const io = new Server(server, {
     cors: {
-      origin: frontendOrigin,
-      methods: ["GET", "POST"],
+      origin: corsOrigin,
+      methods: ["GET", "POST", "OPTIONS"],
       credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"],
     },
     transports: ["websocket", "polling"],
+    allowEIO3: true,
   });
 
   // Middleware
   app.use(
     cors({
-      origin: frontendOrigin,
-      methods: ["GET", "POST"],
+      origin: corsOrigin,
       credentials: true,
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
+
   app.use(express.json());
 
   // Health check endpoint
