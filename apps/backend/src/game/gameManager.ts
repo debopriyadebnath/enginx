@@ -11,13 +11,21 @@ class GameManager {
   private roomTimers: Map<string, NodeJS.Timeout> = new Map();
 
   /**
-   * Add player to waiting queue and auto-match if 2 players waiting
+   * Add player to waiting queue and auto-match when a *different* socket joins.
+   * Guards: no duplicate queue entries; never match a socket with itself (double "Find match").
    */
   joinGame(playerId: string): string {
-    if (this.waitingQueue.length === 1) {
-      const otherPlayerId = this.waitingQueue.pop()!;
-      const roomId = this.createRoom([playerId, otherPlayerId]);
-      return roomId;
+    if (this.waitingQueue.includes(playerId)) {
+      return "";
+    }
+
+    if (this.waitingQueue.length >= 1) {
+      const otherPlayerId = this.waitingQueue.shift()!;
+      if (otherPlayerId === playerId) {
+        this.waitingQueue.unshift(otherPlayerId);
+        return "";
+      }
+      return this.createRoom([playerId, otherPlayerId]);
     }
 
     this.waitingQueue.push(playerId);

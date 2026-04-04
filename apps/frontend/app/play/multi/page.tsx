@@ -29,7 +29,7 @@ export default function MultiplayerQuizPage() {
     hasSubmitted,
     lastReveal,
     mySocketId,
-    findMatch,
+    findMatchSafe,
     submitAnswer,
     resetToLobby,
     errorMessage,
@@ -97,8 +97,8 @@ export default function MultiplayerQuizPage() {
   }, [currentRound]);
 
   const handleFindMatch = useCallback(() => {
-    findMatch(displayName.trim() || "Player");
-  }, [findMatch, displayName]);
+    findMatchSafe(displayName.trim() || "Player");
+  }, [findMatchSafe, displayName]);
 
   if (isLoading || !isAuthenticated || user === undefined) {
     return (

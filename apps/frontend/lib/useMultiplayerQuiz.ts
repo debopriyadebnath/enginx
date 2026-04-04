@@ -34,6 +34,8 @@ export type UseMultiplayerQuiz = {
   lastReveal: AnswerTimeUpPayload | null;
   mySocketId: string | null;
   findMatch: (username: string) => void;
+  /** Ignores duplicate taps while already in queue */
+  findMatchSafe: (username: string) => void;
   submitAnswer: () => void;
   resetToLobby: () => void;
   errorMessage: string | null;
@@ -59,6 +61,8 @@ export function useMultiplayerQuiz(
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const mySocketIdRef = useRef<string | null>(null);
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
   /** Avoid duplicate emits when the timer hits 0 (Strict Mode / rapid ticks). */
   const submitSentForRoundRef = useRef<number | null>(null);
 
@@ -71,6 +75,23 @@ export function useMultiplayerQuiz(
     if (socket.connected) onConnect();
     return () => {
       socket.off("connect", onConnect);
+    };
+  }, [socket]);
+
+  /** Queue is keyed by socket id — if we disconnect while waiting, we are no longer in queue. */
+  useEffect(() => {
+    if (!socket) return;
+    const onDisconnect = (reason: string) => {
+      if (phaseRef.current === "waiting") {
+        setPhase("idle");
+        setErrorMessage(
+          `Disconnected (${reason}). Tap Find match again after reconnect.`
+        );
+      }
+    };
+    socket.on("disconnect", onDisconnect);
+    return () => {
+      socket.off("disconnect", onDisconnect);
     };
   }, [socket]);
 
@@ -187,6 +208,14 @@ export function useMultiplayerQuiz(
     [socket]
   );
 
+  const findMatchSafe = useCallback(
+    (username: string) => {
+      if (phase === "waiting") return;
+      findMatch(username);
+    },
+    [phase, findMatch]
+  );
+
   const submitAnswer = useCallback(() => {
     if (!socket || !roomId || !currentRound) return;
     const qIdx = currentRound.questionIndex;
@@ -218,6 +247,7 @@ export function useMultiplayerQuiz(
     lastReveal,
     mySocketId,
     findMatch,
+    findMatchSafe,
     submitAnswer,
     resetToLobby,
     errorMessage: connected ? errorMessage : "Connecting…",

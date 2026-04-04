@@ -20,6 +20,10 @@ export function createServer_() {
     },
     transports: ["websocket", "polling"],
     allowEIO3: true,
+    /** Reduce spurious disconnects on slow tabs / dev tools / Wi‑Fi. */
+    pingTimeout: 60_000,
+    pingInterval: 25_000,
+    connectTimeout: 45_000,
   });
 
   // Middleware
