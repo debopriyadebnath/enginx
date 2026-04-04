@@ -8,7 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { useSession } from "@/lib/session";
 
 const HERO_VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98a76-1265-4f5c-882a-4276f2080894.mp4";
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
 
 const Signup = () => {
   const router = useRouter();
@@ -34,7 +34,7 @@ const Signup = () => {
       <div className="absolute top-8 left-8 z-30">
         <Link
           href="/"
-          className="font-anton text-[16px] uppercase text-[#EFF4FF] tracking-wider"
+          className="font-grotesk text-[16px] uppercase text-[#EFF4FF] tracking-wider"
         >
           EngineX
         </Link>
@@ -75,7 +75,7 @@ const Signup = () => {
             }
           }}
         >
-          <h2 className="font-anton text-[28px] uppercase text-[#EFF4FF] mb-6">
+          <h2 className="font-grotesk text-[28px] uppercase text-[#EFF4FF] mb-6">
             Create Account
           </h2>
 
@@ -119,7 +119,7 @@ const Signup = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#6FFF00] text-[#010828] font-anton uppercase rounded-[12px] py-3 hover:brightness-110 transition font-bold text-[16px] disabled:opacity-60"
+            className="w-full bg-[#6FFF00] text-[#010828] font-grotesk uppercase rounded-[12px] py-3 hover:brightness-110 transition font-bold text-[16px] disabled:opacity-60"
           >
             {submitting ? "Creating…" : "Sign Up"}
           </button>

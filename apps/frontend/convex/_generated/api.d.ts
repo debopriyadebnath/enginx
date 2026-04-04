@@ -8,7 +8,12 @@
  * @module
  */
 
+import type * as auth_session from "../auth/session.js";
 import type * as http from "../http.js";
+import type * as questions from "../questions.js";
+import type * as quizGame from "../quizGame.js";
+import type * as seed from "../seed.js";
+import type * as seed_questionPack from "../seed/questionPack.js";
 import type * as sessions from "../sessions.js";
 import type * as users from "../users.js";
 
@@ -19,7 +24,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "auth/session": typeof auth_session;
   http: typeof http;
+  questions: typeof questions;
+  quizGame: typeof quizGame;
+  seed: typeof seed;
+  "seed/questionPack": typeof seed_questionPack;
   sessions: typeof sessions;
   users: typeof users;
 }>;

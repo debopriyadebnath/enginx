@@ -1,6 +1,33 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const questionType = v.union(
+  v.literal("mcq"),
+  v.literal("code_output"),
+  v.literal("debug"),
+  v.literal("math")
+);
+
+const questionCategory = v.union(
+  v.literal("aiml"),
+  v.literal("cs_fundamentals"),
+  v.literal("programming"),
+  v.literal("math")
+);
+
+const difficulty = v.union(
+  v.literal("easy"),
+  v.literal("medium"),
+  v.literal("hard")
+);
+
+/** Matches exported JSON packs; `builtin` kept for legacy seeded rows. */
+const questionSource = v.union(
+  v.literal("gemini"),
+  v.literal("local"),
+  v.literal("builtin")
+);
+
 export default defineSchema({
   users: defineTable({
     name: v.optional(v.string()),
@@ -12,130 +39,106 @@ export default defineSchema({
     isAnonymous: v.optional(v.boolean()),
     avatarUrl: v.optional(v.string()),
     score: v.optional(v.number()),
+    /** Rolling best streak across quiz sessions (gamification). */
+    bestStreak: v.optional(v.number()),
+    /** Last session streak (for UI). */
+    lastStreak: v.optional(v.number()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
-    /** PBKDF2-SHA256 hash (hex), with passwordSalt */
     passwordHash: v.optional(v.string()),
     passwordSalt: v.optional(v.string()),
   })
     .index("email", ["email"])
-    .index("phone", ["phone"]),
+    .index("phone", ["phone"])
+    .index("by_score", ["score"]),
+
   sessions: defineTable({
     token: v.string(),
     userId: v.id("users"),
     expiresAt: v.number(),
   }).index("by_token", ["token"]),
+
   questions: defineTable({
-    id: v.string(),
-    type: v.union(
-      v.literal("mcq"),
-      v.literal("code_output"),
-      v.literal("debug"),
-      v.literal("math")
-    ),
-    category: v.string(),
-    topic: v.string(),
-    difficulty: v.union(
-      v.literal("easy"),
-      v.literal("medium"),
-      v.literal("hard")
-    ),
+    externalId: v.optional(v.string()),
+    type: questionType,
+    category: questionCategory,
+    topic: v.optional(v.string()),
+    difficulty,
     question: v.string(),
-    options: v.array(v.string()),
+    options: v.optional(v.array(v.string())),
     answer: v.string(),
-    explanation: v.string(),
+    explanation: v.optional(v.string()),
     timeLimit: v.number(),
     points: v.number(),
     tags: v.array(v.string()),
     createdAt: v.number(),
-    source: v.union(v.literal("gemini"), v.literal("local")),
-    isFallback: v.boolean(),
+    source: v.optional(questionSource),
+    isFallback: v.optional(v.boolean()),
   })
-    .index("by_id", ["id"])
     .index("by_category", ["category"])
-    .index("by_difficulty", ["difficulty"])
-    .index("by_type", ["type"])
-    .index("by_category_and_difficulty", ["category", "difficulty"])
-    .index("by_category_and_type", ["category", "type"])
-    .index("by_difficulty_and_type", ["difficulty", "type"])
-    .index("by_category_and_difficulty_and_type", [
-      "category",
-      "difficulty",
-      "type",
-    ]),
-  gameConfigs: defineTable({
-    key: v.string(),
-    gameType: v.string(),
-    version: v.number(),
-    config: v.any(),
-    isActive: v.boolean(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_key", ["key"])
-    .index("by_gameType_and_version", ["gameType", "version"])
-    .index("by_gameType_and_isActive", ["gameType", "isActive"]),
+    .index("by_category_type", ["category", "type"])
+    .index("by_category_difficulty", ["category", "difficulty"])
+    .index("by_externalId", ["externalId"]),
+
   games: defineTable({
     gameType: v.string(),
     mode: v.union(v.literal("single"), v.literal("multi")),
     status: v.union(
-      v.literal("waiting"),
-      v.literal("active"),
-      v.literal("completed")
+      v.literal("lobby"),
+      v.literal("running"),
+      v.literal("paused"),
+      v.literal("ended")
     ),
-    currentState: v.any(),
-    currentQuestionIndex: v.number(),
+    /** Extensible per–game-type state (question index, timers, etc.). */
+    currentState: v.optional(v.any()),
     roomId: v.optional(v.id("rooms")),
-    startedAt: v.optional(v.number()),
-    endedAt: v.optional(v.number()),
-    createdBy: v.string(),
+    hostUserId: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
-    configKey: v.optional(v.string()),
+    endedAt: v.optional(v.number()),
   })
-    .index("by_roomId", ["roomId"])
-    .index("by_createdBy", ["createdBy"])
-    .index("by_status_and_gameType", ["status", "gameType"]),
+    .index("by_room", ["roomId"])
+    .index("by_host", ["hostUserId"])
+    .index("by_status", ["status"]),
+
   rooms: defineTable({
-    roomCode: v.string(),
-    hostId: v.string(),
+    code: v.string(),
+    gameId: v.id("games"),
+    hostUserId: v.id("users"),
     maxPlayers: v.number(),
     status: v.union(
-      v.literal("waiting"),
-      v.literal("active"),
-      v.literal("completed")
+      v.literal("open"),
+      v.literal("playing"),
+      v.literal("closed")
     ),
-    gameId: v.optional(v.id("games")),
     createdAt: v.number(),
-    updatedAt: v.number(),
   })
-    .index("by_roomCode", ["roomCode"])
-    .index("by_hostId", ["hostId"])
-    .index("by_status", ["status"]),
+    .index("by_code", ["code"])
+    .index("by_game", ["gameId"]),
+
   roomPlayers: defineTable({
     roomId: v.id("rooms"),
-    userId: v.string(),
+    userId: v.id("users"),
     score: v.number(),
+    streak: v.number(),
     joinedAt: v.number(),
-    isReady: v.boolean(),
-    metadata: v.optional(v.any()),
+    ready: v.boolean(),
   })
-    .index("by_roomId", ["roomId"])
-    .index("by_userId", ["userId"])
-    .index("by_roomId_and_userId", ["roomId", "userId"])
-    .index("by_roomId_and_score", ["roomId", "score"]),
+    .index("by_room", ["roomId"])
+    .index("by_room_user", ["roomId", "userId"])
+    .index("by_user", ["userId"]),
+
   attempts: defineTable({
-    userId: v.string(),
     gameId: v.id("games"),
+    userId: v.id("users"),
     questionId: v.id("questions"),
-    selectedAnswer: v.string(),
-    isCorrect: v.boolean(),
-    timeTaken: v.number(),
-    pointsAwarded: v.number(),
+    answer: v.string(),
+    correct: v.boolean(),
+    pointsEarned: v.number(),
+    timeMs: v.optional(v.number()),
     createdAt: v.number(),
   })
-    .index("by_userId", ["userId"])
-    .index("by_gameId", ["gameId"])
-    .index("by_gameId_and_userId", ["gameId", "userId"])
-    .index("by_gameId_and_questionId", ["gameId", "questionId"]),
+    .index("by_game_user", ["gameId", "userId"])
+    .index("by_game", ["gameId"])
+    .index("by_question", ["questionId"]),
 });

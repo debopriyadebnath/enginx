@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Anton, Condiment } from "next/font/google"; // Import custom fonts
 import "./globals.css";
 import { ConvexClientProvider } from "./providers";
 import { getConvexUrlFromEnvLocalFile } from "@/lib/readConvexUrl.server";
@@ -11,6 +11,18 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const anton = Anton({
+  weight: "400",
+  variable: "--font-anton",
+  subsets: ["latin"],
+});
+
+const condiment = Condiment({
+  weight: "400",
+  variable: "--font-condiment-google",
   subsets: ["latin"],
 });
 
@@ -29,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} ${condiment.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ConvexClientProvider convexUrl={convexUrl}>
