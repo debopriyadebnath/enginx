@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useSessionAuthToken } from "@/lib/auth";
+import {
+  acquireGameSocket,
+  getGameSocketState,
+  releaseGameSocket,
+  subscribeGameSocket,
+} from "@/lib/gameSocketStore";
 
 const defaultUrl = "http://localhost:8000";
 
@@ -14,13 +20,14 @@ const socketOptions = {
   transports: ["websocket", "polling"] as string[],
   autoConnect: true,
   reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
+  reconnectionAttempts: 50,
+  reconnectionDelay: 500,
+  reconnectionDelayMax: 10_000,
+  timeout: 25_000,
 };
 
 /**
- * Socket.IO client that sends the opaque session token as `auth.token`
- * (verified on the Bun server via Convex `sessions:validateSession`).
+ * Standalone client (tests / one-off). Prefer `useAuthenticatedGameSocket` for the app.
  */
 export function createAuthenticatedSocket(sessionToken: string): Socket {
   return io(getSocketBaseUrl(), {
@@ -33,61 +40,46 @@ export type AuthenticatedSocketState = {
   socket: Socket | null;
   connected: boolean;
   error: string | null;
+  /** Internal: increments when shared socket state changes (for React re-renders). */
+  _socketRevision?: number;
 };
 
 /**
- * One Socket.IO connection per session; reconnects when the session token changes.
+ * Shared Socket.IO connection (ref-counted) so route changes / React Strict Mode
+ * do not constantly disconnect and break matchmaking.
  */
 export function useAuthenticatedGameSocket(): AuthenticatedSocketState & {
   sessionToken: string | null;
 } {
   const sessionToken = useSessionAuthToken();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
-  const baseUrl = useMemo(() => getSocketBaseUrl(), []);
+  useEffect(() => subscribeGameSocket(() => setTick((t) => t + 1)), []);
 
   useEffect(() => {
     if (!sessionToken) {
-      setSocket(null);
-      setConnected(false);
-      setError(null);
+      releaseGameSocket();
+      setTick((t) => t + 1);
       return;
     }
-
-    const s = io(baseUrl, {
-      ...socketOptions,
-      auth: { token: sessionToken },
-    });
-
-    const onConnect = () => {
-      setConnected(true);
-      setError(null);
-    };
-    const onDisconnect = () => setConnected(false);
-    const onConnectError = (err: Error) => {
-      setError(err.message);
-      setConnected(false);
-    };
-
-    s.on("connect", onConnect);
-    s.on("disconnect", onDisconnect);
-    s.on("connect_error", onConnectError);
-
-    setSocket(s);
-
+    acquireGameSocket(sessionToken);
+    setTick((t) => t + 1);
     return () => {
-      s.off("connect", onConnect);
-      s.off("disconnect", onDisconnect);
-      s.off("connect_error", onConnectError);
-      s.disconnect();
-      setSocket(null);
-      setConnected(false);
+      releaseGameSocket();
+      setTick((t) => t + 1);
     };
-  }, [sessionToken, baseUrl]);
+  }, [sessionToken]);
 
-  return { socket, connected, error, sessionToken };
+  const { socket, connected, error } = getGameSocketState();
+
+  return {
+    socket,
+    connected,
+    error,
+    sessionToken,
+    /** Bumps when the shared socket connects/disconnects/errors (internal). */
+    _socketRevision: tick,
+  };
 }
 
 export { useMultiplayerQuiz } from "./useMultiplayerQuiz";
