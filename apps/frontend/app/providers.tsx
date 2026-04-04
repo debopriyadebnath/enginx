@@ -1,13 +1,29 @@
 "use client";
 
-import { ConvexProvider } from "convex/react";
-import type { ReactNode } from "react";
-import { convex } from "@/lib/convex";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { SessionProvider } from "@/lib/session";
 
-export function ConvexClientProvider({ children }: { children: ReactNode }) {
+export function ConvexClientProvider({
+  children,
+  convexUrl,
+}: {
+  children: ReactNode;
+  convexUrl: string;
+}) {
+  const client = useMemo(
+    () => new ConvexReactClient(convexUrl),
+    [convexUrl]
+  );
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.info("[Convex] client URL (from server):", convexUrl);
+    }
+  }, [convexUrl]);
+
   return (
-    <ConvexProvider client={convex}>
+    <ConvexProvider client={client}>
       <SessionProvider>{children}</SessionProvider>
     </ConvexProvider>
   );
