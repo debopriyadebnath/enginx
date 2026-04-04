@@ -12,7 +12,7 @@ type Props = {
 export function DebugQuestion({ question, value, onChange, disabled }: Props) {
   return (
     <div className="space-y-3">
-      <div className="rounded-[14px] border border-red-400/40 bg-red-950/40 p-4 ring-1 ring-red-500/20">
+      <div className="liquid-glass rounded-[14px] p-4 ring-1 ring-red-500/20">
         <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-red-200">
           Bug hunt
         </p>

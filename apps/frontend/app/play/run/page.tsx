@@ -251,20 +251,36 @@ function PlayRunInner() {
   if (phase === "done") {
     const displayScore = userRow?.score ?? user.score ?? 0;
     return (
-      <div className="relative flex min-h-[100dvh] flex-col bg-[#010828] px-4 py-8">
+      <div className="relative flex min-h-[100dvh] flex-col overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url(/Game-bg.png)' }}
+        />
+        
+        {/* Texture overlay */}
         <div
-          className="pointer-events-none fixed inset-0 opacity-30"
+          className="fixed inset-0 z-5 pointer-events-none opacity-[0.08]"
           style={{
-            background:
-              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(111,255,0,0.12), transparent 50%)",
+            backgroundImage: 'url(/texture.png)',
+            backgroundSize: '200px 200px',
+            backgroundRepeat: 'repeat',
           }}
         />
-        <div className="relative z-10 mx-auto w-full max-w-2xl">
-          <div className="rounded-[24px] border border-white/15 bg-white/[0.07] p-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md sm:p-8">
+
+        <div
+          className="pointer-events-none fixed inset-0 z-10 opacity-20"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(111,255,0,0.1), transparent 70%)",
+          }}
+        />
+        <div className="relative z-20 mx-auto w-full max-w-2xl px-4 py-12">
+          <div className="liquid-glass rounded-[28px] border border-white/12 p-8 text-center shadow-[0_32px_120px_rgba(0,0,0,0.65)] backdrop-blur-xl sm:p-10 [--glass-bg:rgba(255, 255, 255, 0.7)] [--glass-bg-accent:rgba(111,255,0,0.05)]">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-cream/60">
               Run complete
             </p>
-            <p className="font-anton mt-2 text-3xl uppercase text-neon sm:text-4xl">
+            <p className="font-grotesk mt-2 text-3xl uppercase text-neon sm:text-4xl">
               Results
             </p>
             <p className="mt-4 font-mono text-cream">
@@ -285,14 +301,18 @@ function PlayRunInner() {
           </div>
 
           <div className="mt-8 space-y-4">
-            <h3 className="font-anton text-lg uppercase tracking-wide text-cream">
+            <h3 className="font-grotesk text-lg uppercase tracking-wide text-cream">
               Review — answers & explanations
             </h3>
             <ul className="space-y-4">
               {results.map((row, i) => (
                 <li
                   key={`${row.id}-${i}`}
-                  className="rounded-[18px] border border-white/12 bg-white/[0.05] p-4 text-left"
+                  className={`liquid-glass rounded-[24px] border p-6 text-left transition-all backdrop-blur-lg ${
+                    row.correct
+                      ? "border-emerald-500/30 [--glass-bg:rgba(0,0,0,0.66)] [--glass-bg-accent:rgba(16,185,129,0.08)] shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+                      : "border-rose-500/30 [--glass-bg:rgba(0,0,0,0.75)] [--glass-bg-accent:rgba(244,63,94,0.08)] shadow-[0_12px_40px_rgba(0,0,0,0.6)]"
+                  }`}
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs text-cream/50">
@@ -316,7 +336,7 @@ function PlayRunInner() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-2 font-anton text-base leading-snug text-cream">
+                  <p className="mt-2 font-grotesk text-base leading-snug text-cream">
                     {row.question}
                   </p>
                   <p className="mt-3 font-mono text-sm text-cream/85">
@@ -340,13 +360,13 @@ function PlayRunInner() {
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/play"
-              className="rounded-[12px] border border-white/25 bg-white/5 px-5 py-3 text-center font-anton uppercase text-cream hover:bg-white/10"
+              className="liquid-glass rounded-[12px] bg-pink px-5 py-3 text-center font-grotesk uppercase text-cream hover:bg-white/10"
             >
               Play again
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-[12px] bg-neon px-5 py-3 text-center font-anton uppercase text-[#010828] hover:brightness-110"
+              className="rounded-[12px] bg-neon px-5 py-3 text-center font-grotesk uppercase text-[#010828] hover:brightness-110"
             >
               Dashboard
             </Link>
@@ -367,16 +387,32 @@ function PlayRunInner() {
   const displayScore = userRow?.score ?? user.score ?? 0;
 
   return (
-    <div className="relative flex h-[100dvh] min-h-0 flex-col bg-[#010828]">
+    <div className="relative flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/Game-bg.png)' }}
+      />
+      
+      {/* Texture overlay */}
       <div
-        className="pointer-events-none fixed inset-0 opacity-40"
+        className="fixed inset-0 z-5 pointer-events-none opacity-[0.08]"
         style={{
-          background:
-            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(111,255,0,0.08), transparent 55%)",
+          backgroundImage: 'url(/texture.png)',
+          backgroundSize: '200px 200px',
+          backgroundRepeat: 'repeat',
         }}
       />
 
-      <header className="relative z-40 flex flex-wrap items-center gap-3 border-b border-white/15 bg-[#010828]/90 px-4 py-3 backdrop-blur-md">
+      <div
+        className="pointer-events-none fixed inset-0 z-10 opacity-25"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(111,255,0,0.06), transparent 70%)",
+        }}
+      />
+
+      <header className="relative z-40 flex flex-wrap items-center gap-3 border-b border-white/15 liquid-glass px-4 py-3">
         <Link
           href="/play"
           className="shrink-0 font-mono text-xs font-medium text-neon hover:underline"
@@ -403,13 +439,13 @@ function PlayRunInner() {
         <div className="mx-auto max-w-3xl space-y-5">
           {feedback ? (
             <div
-              className={`rounded-[18px] border px-5 py-4 font-mono text-sm shadow-lg ${
+              className={`liquid-glass rounded-[18px] px-5 py-4 font-mono text-sm shadow-lg ${
                 feedback.correct
-                  ? "border-emerald-400/50 bg-emerald-950/50 text-emerald-100"
-                  : "border-rose-400/45 bg-rose-950/45 text-rose-50"
+                  ? "border-emerald-400/50 text-emerald-100"
+                  : "border-rose-400/45 text-rose-50"
               }`}
             >
-              <p className="font-anton text-lg uppercase tracking-wide text-cream">
+              <p className="font-grotesk text-lg uppercase tracking-wide text-cream">
                 {feedback.correct ? "Correct" : "Not quite"}
               </p>
               {feedback.pointsEarned > 0 ? (
@@ -427,7 +463,7 @@ function PlayRunInner() {
                   setFeedback(null);
                   advance();
                 }}
-                className="mt-5 w-full rounded-[12px] bg-neon py-3.5 font-anton uppercase tracking-wide text-[#010828] hover:brightness-110"
+                className="mt-5 w-full rounded-[12px] bg-neon py-3.5 font-grotesk uppercase tracking-wide text-[#010828] hover:brightness-110"
               >
                 {index + 1 >= questions.length ? "See results" : "Next question"}
               </button>
@@ -435,7 +471,7 @@ function PlayRunInner() {
           ) : null}
 
           {!feedback ? (
-            <div className="rounded-[24px] border border-white/15 bg-white/[0.06] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+            <div className="liquid-glass rounded-[28px] border border-white/10 p-6 shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-8 backdrop-blur-xl">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-cream/90">
                   {q.type}
@@ -456,7 +492,7 @@ function PlayRunInner() {
               </div>
               {q.type !== "debug" &&
               !(q.type === "math" && (!q.options || q.options.length === 0)) ? (
-                <h2 className="font-anton mt-4 text-xl leading-snug text-cream sm:text-2xl">
+                <h2 className="font-grotesk mt-4 text-xl leading-snug text-cream sm:text-2xl">
                   {q.question}
                 </h2>
               ) : null}
@@ -474,7 +510,7 @@ function PlayRunInner() {
                 type="button"
                 disabled={submitting || !answer.trim() || !!feedback}
                 onClick={() => void onSubmit(false)}
-                className="mt-8 w-full rounded-[14px] bg-neon py-4 font-anton uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.25)] hover:brightness-110 disabled:opacity-40"
+                className="mt-8 w-full rounded-[14px] bg-neon py-4 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.25)] hover:brightness-110 disabled:opacity-40"
               >
                 {submitting ? "Checking…" : "Lock in answer"}
               </button>

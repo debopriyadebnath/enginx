@@ -164,22 +164,38 @@ function BugFinderInner() {
   if (phase === "done") {
     const displayScore = userRow?.score ?? user.score ?? 0;
     return (
-      <div className="min-h-[100dvh] bg-[#010828] px-4 py-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="rounded-[24px] border border-white/15 bg-white/[0.06] p-6 text-center backdrop-blur-sm">
+      <div className="relative min-h-[100dvh] overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url(/Game-bg.png)' }}
+        />
+        
+        {/* Texture overlay */}
+        <div
+          className="fixed inset-0 z-5 pointer-events-none opacity-[0.08]"
+          style={{
+            backgroundImage: 'url(/texture.png)',
+            backgroundSize: '200px 200px',
+            backgroundRepeat: 'repeat',
+          }}
+        />
+
+        <div className="relative z-20 mx-auto max-w-2xl px-4 py-12">
+          <div className="liquid-glass rounded-[28px] border border-white/12 p-8 text-center shadow-[0_32px_120px_rgba(0,0,0,0.65)] sm:p-10 backdrop-blur-xl [--glass-bg:rgba(0,0,0,0.75)] [--glass-bg-accent:rgba(111,255,0,0.05)]">
             <p className="font-mono text-xs uppercase tracking-widest text-cream/50">
               Bug finder complete
             </p>
-            <p className="font-anton mt-2 text-3xl uppercase text-neon">Review</p>
-            <p className="mt-4 font-mono text-cream">
+            <p className="font-grotesk mt-2 text-3xl uppercase text-neon sm:text-4xl">Review</p>
+            <p className="mt-6 font-mono text-cream">
               Run score ·{" "}
               <span className="text-xl font-semibold text-neon tabular-nums">
                 {runTotal}
               </span>{" "}
               pts
             </p>
-            <p className="mt-1 font-mono text-sm text-cream/65">
-              Total · {displayScore} pts · streak · {userRow?.bestStreak ?? user.bestStreak ?? 0}
+            <p className="mt-2 font-mono text-sm text-cream/65">
+              Total · {displayScore} pts · best streak · {userRow?.bestStreak ?? user.bestStreak ?? 0}
             </p>
           </div>
 
@@ -187,7 +203,11 @@ function BugFinderInner() {
             {results.map((row, i) => (
               <li
                 key={`${row.id}-${i}`}
-                className="rounded-[18px] border border-white/10 bg-white/[0.04] p-4"
+                className={`liquid-glass rounded-[20px] border p-5 transition-all backdrop-blur-lg ${
+                  row.correct
+                    ? "border-emerald-500/30 [--glass-bg:rgba(0,0,0,0.65)] [--glass-bg-accent:rgba(16,185,129,0.08)] shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+                    : "border-rose-500/30 [--glass-bg:rgba(0,0,0,0.7)] [--glass-bg-accent:rgba(244,63,94,0.08)] shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+                }`}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-[10px] text-cream/45">Q{i + 1}</span>
@@ -206,7 +226,7 @@ function BugFinderInner() {
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-2 font-anton text-lg text-cream">{row.title}</p>
+                <p className="mt-2 font-grotesk text-lg text-cream">{row.title}</p>
                 <p className="mt-2 font-mono text-sm text-cream/80">
                   Your pick: <span className="text-cream">{row.selected}</span>
                 </p>
@@ -223,13 +243,13 @@ function BugFinderInner() {
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link
               href="/dashboard"
-              className="rounded-[12px] border border-white/20 px-5 py-3 font-anton uppercase text-cream hover:bg-white/10"
+              className="liquid-glass rounded-[12px] px-5 py-3 font-grotesk uppercase text-cream hover:bg-white/10"
             >
               Dashboard
             </Link>
             <Link
               href="/play/bug-finder"
-              className="rounded-[12px] bg-neon px-5 py-3 font-anton uppercase text-[#010828]"
+              className="rounded-[12px] bg-neon px-5 py-3 font-grotesk uppercase text-[#010828] shadow-[0_0_24px_rgba(111,255,0,0.2)] hover:brightness-110"
             >
               Play again
             </Link>
@@ -251,16 +271,32 @@ function BugFinderInner() {
   const blankLabel = selected ?? null;
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#010828]">
+    <div className="relative min-h-[100dvh] overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/Game-bg.png)' }}
+      />
+      
+      {/* Texture overlay */}
       <div
-        className="pointer-events-none fixed inset-0 opacity-30"
+        className="fixed inset-0 z-5 pointer-events-none opacity-[0.08]"
         style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(111,255,0,0.07), transparent 50%)",
+          backgroundImage: 'url(/texture.png)',
+          backgroundSize: '200px 200px',
+          backgroundRepeat: 'repeat',
         }}
       />
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#010828]/90 px-4 py-3 backdrop-blur-md">
+      <div
+        className="pointer-events-none fixed inset-0 z-10 opacity-25"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(111,255,0,0.06), transparent 70%)",
+        }}
+      />
+
+      <header className="sticky top-0 z-40 border-b border-white/10 liquid-glass px-4 py-3">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
           <Link href="/dashboard" className="font-mono text-xs text-neon hover:underline">
             ← Dashboard
@@ -282,13 +318,13 @@ function BugFinderInner() {
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 pb-16">
         {feedback ? (
           <div
-            className={`mb-6 rounded-[18px] border px-5 py-4 ${
+            className={`liquid-glass mb-6 rounded-[18px] px-5 py-4 ${
               feedback.correct
-                ? "border-emerald-400/40 bg-emerald-950/40"
-                : "border-rose-400/40 bg-rose-950/40"
+                ? "border-emerald-400/40 text-emerald-100"
+                : "border-rose-400/40 text-rose-50"
             }`}
           >
-            <p className="font-anton text-lg uppercase text-cream">
+            <p className="font-grotesk text-lg uppercase text-cream">
               {feedback.correct ? "Correct" : "Not quite"}
             </p>
             {feedback.pointsEarned > 0 ? (
@@ -305,7 +341,7 @@ function BugFinderInner() {
                 setFeedback(null);
                 advance();
               }}
-              className="mt-4 w-full rounded-[12px] bg-neon py-3 font-anton uppercase text-[#010828]"
+              className="mt-4 w-full rounded-[12px] bg-neon py-3 font-grotesk uppercase text-[#010828] shadow-[0_0_20px_rgba(111,255,0,0.2)] hover:brightness-110"
             >
               {index + 1 >= questions.length ? "See results" : "Next"}
             </button>
@@ -318,7 +354,7 @@ function BugFinderInner() {
               <p className="font-mono text-[10px] uppercase tracking-widest text-cream/45">
                 {q.concept} · {q.difficulty}
               </p>
-              <h1 className="font-anton mt-1 text-2xl uppercase leading-tight text-cream sm:text-3xl">
+              <h1 className="font-grotesk mt-1 text-2xl uppercase leading-tight text-cream sm:text-3xl">
                 {q.title}
               </h1>
               <p className="mt-2 font-mono text-sm leading-relaxed text-cream/70">
@@ -346,8 +382,8 @@ function BugFinderInner() {
                     onClick={() => setSelected(opt)}
                     className={`rounded-xl border px-3 py-3 font-mono text-sm transition ${
                       active
-                        ? "border-[#6fff00] bg-[#6fff00]/15 text-[#b7ff8c]"
-                        : "border-white/15 bg-white/[0.05] text-cream hover:border-white/25 hover:bg-white/10"
+                        ? "liquid-glass border-[#6fff00] bg-[#6fff00]/25 text-[#b7ff8c] shadow-[0_0_20px_rgba(111,255,0,0.15)]"
+                        : "liquid-glass text-cream hover:bg-white/10"
                     }`}
                   >
                     {opt}
@@ -360,7 +396,7 @@ function BugFinderInner() {
               type="button"
               disabled={selected === null || submitting}
               onClick={() => void onSubmit()}
-              className="mt-8 w-full rounded-[14px] bg-neon py-4 font-anton uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(111,255,0,0.2)] disabled:opacity-40"
+            className="mt-8 w-full rounded-[14px] bg-neon py-4 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.3)] hover:brightness-110 disabled:opacity-40"
             >
               {submitting ? "Checking…" : "Lock in"}
             </button>

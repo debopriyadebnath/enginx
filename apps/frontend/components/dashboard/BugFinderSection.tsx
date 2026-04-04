@@ -4,14 +4,20 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Bug, Terminal } from "lucide-react";
 import { getAllConcepts } from "@/lib/codesPack";
+import { MascotCountdown } from "./MascotCountdown";
 
 export function BugFinderSection() {
   const router = useRouter();
   const concepts = useMemo(() => ["all", ...getAllConcepts()], []);
   const [concept, setConcept] = useState<string>("all");
   const [count, setCount] = useState(5);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   function start() {
+    setShowCountdown(true);
+  }
+
+  function handleCountdownComplete() {
     const q = new URLSearchParams({ count: String(count) });
     if (concept !== "all") q.set("concept", concept);
     router.push(`/play/bug-finder?${q.toString()}`);
@@ -21,12 +27,12 @@ export function BugFinderSection() {
     <section id="bug-finder" className="mb-10 scroll-mt-8">
       <div className="mb-4 flex items-center gap-2">
         <Bug className="text-amber-400" size={18} />
-        <span className="font-anton text-[11px] uppercase tracking-widest text-cream/50">
+        <span className="font-grotesk text-[11px] uppercase tracking-widest text-cream/50">
           CS fundamentals · Bug finder
         </span>
       </div>
 
-      <div className="relative overflow-hidden rounded-[24px] border border-amber-400/20 bg-gradient-to-br from-amber-400/[0.07] via-white/[0.03] to-transparent p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-8">
+      <div className="liquid-glass relative [--glass-border-start:rgba(245,158,11,0.5)] [--glass-border-mid:rgba(245,158,11,0.15)] [--glass-bg:rgba(245,158,11,0.04)] [--glass-bg-accent:rgba(245,158,11,0.08)] overflow-hidden rounded-[24px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-8">
         <div
           className="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-amber-500/10 blur-3xl"
           aria-hidden
@@ -36,7 +42,7 @@ export function BugFinderSection() {
           <div>
             <div className="flex items-center gap-2">
               <Terminal className="text-amber-300" size={24} />
-              <h2 className="font-anton text-2xl uppercase tracking-wide text-cream sm:text-3xl">
+              <h2 className="font-grotesk text-2xl uppercase tracking-wide text-cream sm:text-3xl">
                 Bug finder
               </h2>
             </div>
@@ -85,13 +91,14 @@ export function BugFinderSection() {
             <button
               type="button"
               onClick={() => start()}
-              className="mt-5 w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 font-anton uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(245,158,11,0.25)] transition hover:brightness-110"
+              className="mt-5 w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(245,158,11,0.25)] transition hover:brightness-110"
             >
               Open terminal
             </button>
           </div>
         </div>
       </div>
+      {showCountdown && <MascotCountdown onComplete={handleCountdownComplete} />}
     </section>
   );
 }

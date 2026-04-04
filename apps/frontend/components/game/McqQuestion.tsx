@@ -24,11 +24,11 @@ export function McqQuestion({ question, value, onChange, disabled }: Props) {
             onClick={() => onChange(id)}
             className={`rounded-[16px] border px-4 py-4 text-left font-mono text-sm transition ${
               selected
-                ? "border-neon bg-neon/20 text-cream shadow-[0_0_20px_rgba(111,255,0,0.15)]"
-                : "border-white/20 bg-white/[0.06] text-cream hover:border-white/35 hover:bg-white/10"
+                ? "liquid-glass border-neon bg-neon/20 text-cream shadow-[0_0_20px_rgba(111,255,0,0.15)]"
+                : "liquid-glass text-cream hover:bg-white/10"
             }`}
           >
-            <span className="font-anton mr-2 text-neon">{String.fromCharCode(65 + i)}.</span>
+            <span className="font-grotesk mr-2 text-neon">{String.fromCharCode(65 + i)}.</span>
             {opt}
           </button>
         );

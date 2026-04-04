@@ -66,7 +66,9 @@
 
 /* Liquid Glass Effect */
 @utility liquid-glass {
-  background: rgba(255, 255, 255, 0.03);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-accent: transparent;
+  background: radial-gradient(circle at top left, var(--glass-bg-accent) 0%, var(--glass-bg) 100%);
   background-blend-mode: luminosity;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -75,6 +77,9 @@
   position: relative;
   overflow: hidden;
 
+  --glass-border-start: rgba(255, 255, 255, 0.45);
+  --glass-border-mid: rgba(255, 255, 255, 0.15);
+
   &::before {
     content: '';
     position: absolute;
@@ -82,9 +87,11 @@
     border-radius: inherit;
     padding: 1.4px;
     background: linear-gradient(180deg,
-      rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%,
+      var(--glass-border-start) 0%, 
+      var(--glass-border-mid) 20%,
       rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
-      rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+      var(--glass-border-mid) 80%, 
+      var(--glass-border-start) 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;

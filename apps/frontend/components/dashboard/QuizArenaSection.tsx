@@ -8,14 +8,20 @@ import {
   type QuizCategoryId,
   buildPlayRunQuery,
 } from "@/lib/quizLobby";
+import { MascotCountdown } from "./MascotCountdown";
 
 export function QuizArenaSection() {
   const router = useRouter();
   const [category, setCategory] = useState<QuizCategoryId>("math");
   const [count, setCount] = useState(5);
   const [useTimer, setUseTimer] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   function start() {
+    setShowCountdown(true);
+  }
+
+  function handleCountdownComplete() {
     const qs = buildPlayRunQuery(category, count, useTimer);
     router.push(`/play/run?${qs}`);
   }
@@ -25,7 +31,7 @@ export function QuizArenaSection() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ClipboardList className="text-neon" size={18} />
-          <span className="font-anton text-[11px] uppercase tracking-widest text-cream/50">
+          <span className="font-grotesk text-[11px] uppercase tracking-widest text-cream/50">
             Quiz Arena
           </span>
         </div>
@@ -34,7 +40,7 @@ export function QuizArenaSection() {
         </span>
       </div>
 
-      <div className="relative overflow-hidden rounded-[24px] border border-[#6FFF00]/25 bg-gradient-to-br from-[#6FFF00]/[0.08] via-white/[0.04] to-transparent p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm md:p-8">
+      <div className="liquid-glass relative [--glass-border-start:rgba(111,255,0,0.5)] [--glass-border-mid:rgba(111,255,0,0.15)] [--glass-bg:rgba(108, 212, 28, 0.04)] [--glass-bg-accent:rgba(130, 239, 47, 0.08)] overflow-hidden rounded-[24px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-8">
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#6FFF00]/10 blur-3xl"
           aria-hidden
@@ -43,7 +49,7 @@ export function QuizArenaSection() {
           <div>
             <div className="flex items-center gap-2">
               <Sparkles className="text-neon" size={22} />
-              <h2 className="font-anton text-2xl uppercase tracking-wide text-cream sm:text-3xl">
+              <h2 className="font-grotesk text-2xl uppercase tracking-wide text-cream sm:text-3xl">
                 Engineering quiz
               </h2>
             </div>
@@ -111,13 +117,14 @@ export function QuizArenaSection() {
             <button
               type="button"
               onClick={() => start()}
-              className="mt-5 w-full rounded-[14px] bg-[#6FFF00] py-3.5 font-anton uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.2)] transition hover:brightness-110"
+              className="mt-5 w-full rounded-[14px] bg-[#6FFF00] py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.2)] transition hover:brightness-110"
             >
               Start run
             </button>
           </div>
         </div>
       </div>
+      {showCountdown && <MascotCountdown onComplete={handleCountdownComplete} />}
     </section>
   );
 }

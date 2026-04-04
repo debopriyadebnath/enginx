@@ -23,10 +23,10 @@ export function MathQuestion({ question, value, onChange, disabled }: Props) {
               type="button"
               disabled={disabled}
               onClick={() => onChange(id)}
-              className={`rounded-[14px] border px-4 py-4 font-anton text-xl transition ${
+              className={`liquid-glass rounded-[14px] px-4 py-4 font-grotesk text-xl transition ${
                 selected
                   ? "border-neon bg-neon text-[#010828] shadow-[0_0_24px_rgba(111,255,0,0.25)]"
-                  : "border-white/20 bg-white/[0.06] text-cream hover:border-white/35 hover:bg-white/10"
+                  : "text-cream hover:bg-white/10"
               }`}
             >
               {opt}
@@ -38,7 +38,7 @@ export function MathQuestion({ question, value, onChange, disabled }: Props) {
   }
   return (
     <div className="space-y-2">
-      <p className="font-anton text-2xl leading-snug text-cream">{question.question}</p>
+      <p className="font-grotesk text-2xl leading-snug text-cream">{question.question}</p>
       <input
         type="text"
         value={value}
