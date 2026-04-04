@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./providers";
+import { getConvexUrlFromEnvLocalFile } from "@/lib/readConvexUrl.server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,13 +24,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const convexUrl = getConvexUrlFromEnvLocalFile();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <ConvexClientProvider convexUrl={convexUrl}>
+          {children}
+        </ConvexClientProvider>
       </body>
     </html>
   );
