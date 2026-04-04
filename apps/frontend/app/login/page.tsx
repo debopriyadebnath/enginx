@@ -1,78 +1,107 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-const HERO_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { useState } from "react";
+import { api } from "@/convex/_generated/api";
+import { useSession } from "@/lib/session";
 
-const GoogleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 48 48">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.0 24.0 0 0 0 0 21.56l7.98-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-  </svg>
-);
+const HERO_VIDEO =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98a76-1265-4f5c-882a-4276f2080894.mp4";
 
 const Login = () => {
   const router = useRouter();
+  const { setToken } = useSession();
+  const signIn = useMutation(api.sessions.signIn);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Video Background */}
-      <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      >
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
 
-      {/* Dark overlay */}
       <div className="absolute inset-0 z-10 bg-[#010828]/60" />
 
-      {/* Logo */}
       <div className="absolute top-8 left-8 z-30">
-        <Link href="/" className="font-anton text-[16px] uppercase text-[#EFF4FF] tracking-wider">
+        <Link
+          href="/"
+          className="font-anton text-[16px] uppercase text-[#EFF4FF] tracking-wider"
+        >
           EngineX
         </Link>
       </div>
 
-      {/* Card */}
       <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-4">
-        <div className="liquid-glass rounded-[28px] px-10 py-10 max-w-[420px] w-full animate-fade-in-up">
-          <h2 className="font-anton text-[32px] uppercase text-[#EFF4FF] mb-6">Sign In</h2>
+        <form
+          className="liquid-glass rounded-[28px] px-10 py-10 max-w-[420px] w-full animate-fade-in-up"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError(null);
+            setSubmitting(true);
+            try {
+              const form = e.currentTarget;
+              const email = (form.elements.namedItem("email") as HTMLInputElement)
+                .value;
+              const password = (form.elements.namedItem("password") as HTMLInputElement)
+                .value;
+              const { token } = await signIn({ email, password });
+              setToken(token);
+              router.replace("/dashboard");
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Sign in failed");
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          <h2 className="font-anton text-[32px] uppercase text-[#EFF4FF] mb-6">
+            Sign In
+          </h2>
 
           <input
-            type="text"
-            placeholder="Email or Username"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="Email"
             className="font-mono bg-white/5 border border-white/10 rounded-[12px] px-4 py-3 text-[#EFF4FF] placeholder:text-white/30 w-full mb-3 focus:border-[#6FFF00]/60 focus:outline-none transition-colors"
           />
           <input
+            name="password"
             type="password"
+            required
+            autoComplete="current-password"
             placeholder="Password"
-            className="font-mono bg-white/5 border border-white/10 rounded-[12px] px-4 py-3 text-[#EFF4FF] placeholder:text-white/30 w-full mb-5 focus:border-[#6FFF00]/60 focus:outline-none transition-colors"
+            className="font-mono bg-white/5 border border-white/10 rounded-[12px] px-4 py-3 text-[#EFF4FF] placeholder:text-white/30 w-full mb-2 focus:border-[#6FFF00]/60 focus:outline-none transition-colors"
           />
 
+          {error ? (
+            <p className="font-mono text-red-400 text-sm mb-3">{error}</p>
+          ) : null}
+
           <button
-            onClick={() => router.push('/')}
-            className="w-full bg-[#6FFF00] text-[#010828] font-anton uppercase rounded-[12px] py-3 hover:brightness-110 transition font-bold text-[16px]"
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-[#6FFF00] text-[#010828] font-anton uppercase rounded-[12px] py-3 hover:brightness-110 transition font-bold text-[16px] disabled:opacity-60"
           >
-            Sign In
+            {submitting ? "Signing in…" : "Sign In"}
           </button>
+        </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="font-mono text-white/40 text-sm">or</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-
-          {/* Google */}
-          <button className="w-full liquid-glass rounded-[12px] py-3 flex items-center justify-center gap-3 hover:bg-white/10 transition">
-            <GoogleIcon />
-            <span className="font-mono text-[#EFF4FF] text-sm">Continue with Google</span>
-          </button>
-        </div>
-
-        {/* Below card */}
         <p className="mt-6 font-mono text-white/50 text-sm">
-          New User?{' '}
-          <Link href="/signup" className="text-[#6FFF00] hover:underline">Sign up</Link>
+          New User?{" "}
+          <Link href="/signup" className="text-[#6FFF00] hover:underline">
+            Sign up
+          </Link>
         </p>
       </div>
     </div>

@@ -1,85 +1,85 @@
+import type { Socket } from "socket.io";
+import type { Request, Response, NextFunction } from "express";
 import type { CustomSocket } from "../types/types.js";
+import { verifySessionToken } from "../auth/sessionVerify.js";
+import {
+  extractHandshakeAuthToken,
+  buildSocketUser,
+  SocketAuthError,
+} from "../auth/socketAuth.js";
 
-type ExpressLikeRequest = {
-  headers: Record<string, string | string[] | undefined>;
-  user?: { id: string };
-};
+export type SocketAuthNext = (err?: Error) => void;
 
-type ExpressLikeResponse = {
-  status: (code: number) => { json: (body: unknown) => void };
-};
-
-export const extractTokenFromSocket = (socket: CustomSocket): string | null => {
-  const raw = socket.handshake.auth?.token;
-  if (typeof raw !== "string") return null;
-
-  const token = raw.trim();
-  return token.length > 0 ? token : null;
-};
-
-export const minimallyValidateToken = (token: string | null): token is string => {
-  if (!token) return false;
-
-  // Hackathon validation: accept any non-empty token/user id with basic length guard.
-  return token.length >= 3;
-};
-
-export const buildSocketUser = (token: string) => ({ id: token });
+function mapSessionError(err: unknown): string {
+  if (err instanceof Error) {
+    const m = err.message;
+    if (/invalid|expired/i.test(m)) {
+      return SocketAuthError.INVALID_TOKEN;
+    }
+    return m;
+  }
+  return SocketAuthError.INVALID_TOKEN;
+}
 
 /**
- * Socket.IO authentication middleware
- * Extracts token from socket.handshake.auth.token and attaches user to socket.data
- * For hackathon purposes, we trust the token without full validation
- * In production, you would verify the token against Convex backend
+ * Socket.IO middleware — validates session token via Convex
  */
-export const authMiddleware = (socket: CustomSocket, next: (err?: Error) => void) => {
+export async function socketAuthMiddleware(
+  socket: CustomSocket,
+  next: SocketAuthNext
+): Promise<void> {
   try {
-    const token = extractTokenFromSocket(socket);
-    if (!minimallyValidateToken(token)) {
-      return next(new Error("Authentication token required"));
+    const token = extractHandshakeAuthToken(socket as unknown as Socket);
+
+    if (!token) {
+      next(new Error(SocketAuthError.MISSING_TOKEN));
+      return;
     }
 
-    // For hackathon: trust the token format
-    // In production: validate against Convex or your auth provider
-    // Expected format: JWT or session token from Convex frontend auth
-    socket.data.user = buildSocketUser(token);
+    const { userId } = await verifySessionToken(token);
+    socket.data.user = buildSocketUser(userId);
 
     next();
   } catch (error) {
-    next(
-      new Error(
-        error instanceof Error ? error.message : "Authentication failed"
-      )
-    );
+    next(new Error(mapSessionError(error)));
   }
-};
+}
 
 /**
- * Express middleware for HTTP routes (if needed)
- * Extracts token from Authorization header
+ * Express middleware — Authorization: Bearer <session token>
  */
-export const authExpressMiddleware = (
-  req: ExpressLikeRequest,
-  res: ExpressLikeResponse,
-  next: (err?: Error) => void
-) => {
-  try {
-    const authHeader = req.headers.authorization;
-    const rawHeader = Array.isArray(authHeader) ? authHeader[0] : authHeader;
-    const token = rawHeader?.replace("Bearer ", "").trim() || null;
+export function expressAuthMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  void (async () => {
+    try {
+      const authHeader = req.headers.authorization;
 
-    if (!minimallyValidateToken(token)) {
-      return res.status(401).json({ error: "Authentication token required" });
+      const bearer = authHeader?.startsWith("Bearer ")
+        ? authHeader.slice(7).trim()
+        : undefined;
+
+      if (!bearer) {
+        res.status(401).json({ error: SocketAuthError.MISSING_TOKEN });
+        return;
+      }
+
+      const { userId } = await verifySessionToken(bearer);
+      req.user = buildSocketUser(userId);
+
+      next();
+    } catch (error) {
+      res.status(401).json({
+        error: mapSessionError(error),
+      });
     }
+  })();
+}
 
-    req.user = buildSocketUser(token);
+/** @deprecated Use `socketAuthMiddleware` */
+export const authMiddleware = socketAuthMiddleware;
 
-    next();
-  } catch (error) {
-    res.status(401).json({
-      error: error instanceof Error ? error.message : "Authentication failed",
-    });
-  }
-};
-
-export const socketAuthMiddleware = authMiddleware;
+/** @deprecated Use `expressAuthMiddleware` */
+export const authExpressMiddleware = expressAuthMiddleware;

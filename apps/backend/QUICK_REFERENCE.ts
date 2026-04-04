@@ -8,9 +8,10 @@ declare const io: any;
 // Socket.IO Client Example
 // ============================================
 
-const socket = io("http://localhost:4000", {
+const socket = io("http://localhost:8000", {
   auth: {
-    token: "convex-auth-token-from-frontend",
+    // Convex Auth access JWT (same as useAuthToken() on the Next.js client)
+    token: "<jwt>",
   },
 });
 

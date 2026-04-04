@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import type { CustomSocket } from "../types/types.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { socketAuthMiddleware } from "../middleware/auth.js";
 import { gameManager } from "../game/gameManager.js";
 
 const ANSWER_DISPLAY_TIMEOUT = 3000; // 3 seconds to show answer
@@ -12,8 +12,7 @@ interface RoomState {
 }
 
 export const initializeSocket = (io: Server) => {
-  // Apply authentication middleware
-  io.use(authMiddleware);
+  io.use(socketAuthMiddleware);
 
   // Hook when client connects
   io.on("connection", (socket: CustomSocket) => {
