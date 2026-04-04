@@ -15,7 +15,7 @@ import {
   Zap, Search, Activity, Cpu,
   Bug, Layers, Swords, ChevronRight,
   CheckCircle, QrCode, Gamepad2, ClipboardList,
-  Trophy, Radio, Users, Plus
+  Trophy, Radio, Users, Plus, Mic
 } from 'lucide-react';
 
 const NAV_ITEMS: {
@@ -23,8 +23,10 @@ const NAV_ITEMS: {
   label: string;
   active: boolean;
   scrollToQuiz?: boolean;
+  href?: string;
 }[] = [
   { icon: Gamepad2, label: "ARENA", active: true, scrollToQuiz: true },
+  { icon: Mic, label: "VOICE HR", active: false, href: "/interview" },
   { icon: ClipboardList, label: "QUESTS", active: false },
   { icon: Trophy, label: "COMPETE", active: false },
   { icon: Radio, label: "FEED", active: false },
@@ -223,6 +225,18 @@ const Home = () => {
                 behavior: "smooth",
                 block: "start",
               });
+            if (item.href) {
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="flex w-full items-center gap-3 rounded-[16px] px-4 py-3 font-mono text-sm text-cream/70 transition hover:bg-white/10 hover:text-cream"
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            }
             return (
               <button
                 key={item.label}
@@ -469,14 +483,26 @@ const Home = () => {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 liquid-glass border-t border-white/10 flex justify-around py-3">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 liquid-glass border-t border-white/10 flex justify-around py-2">
         {[
           { icon: Gamepad2, label: "Arena", active: true, scrollToQuiz: true },
+          { icon: Mic, label: "Voice", href: "/interview" as const },
           { icon: ClipboardList, label: "Quests", active: false },
           { icon: Trophy, label: "Compete", active: false },
-          { icon: Radio, label: "Feed", active: false },
         ].map((item) => {
           const Icon = item.icon;
+          if ("href" in item && item.href) {
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="flex flex-col items-center gap-1 text-cream/50 hover:text-neon"
+              >
+                <Icon size={20} />
+                <span className="font-mono text-[10px]">{item.label}</span>
+              </Link>
+            );
+          }
           return (
             <button
               key={item.label}
