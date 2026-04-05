@@ -1,0 +1,234 @@
+// packages/graphPuzzles.json
+{
+  "puzzles": [
+    {
+      "id": "ml_pipeline_001",
+      "department": "aiml",
+      "difficulty": 2,
+      "gameMode": "arrange",
+      "title": "ML Training Pipeline",
+      "description": "Arrange the nodes in correct order for a supervised learning workflow",
+      "timeLimit": 60,
+      "correctNodes": [
+        { "id": "1", "position": { "x": 0, "y": 100 }, "data": { "label": "Raw Data" }, "type": "input" },
+        { "id": "2", "position": { "x": 200, "y": 100 }, "data": { "label": "Clean Data" }, "type": "default" },
+        { "id": "3", "position": { "x": 400, "y": 100 }, "data": { "label": "Split Data" }, "type": "default" },
+        { "id": "4", "position": { "x": 600, "y": 100 }, "data": { "label": "Train Model" }, "type": "default" },
+        { "id": "5", "position": { "x": 800, "y": 100 }, "data": { "label": "Evaluate" }, "type": "default" },
+        { "id": "6", "position": { "x": 1000, "y": 100 }, "data": { "label": "Deploy" }, "type": "output" }
+      ],
+      "correctEdges": [
+        { "id": "e1-2", "source": "1", "target": "2" },
+        { "id": "e2-3", "source": "2", "target": "3" },
+        { "id": "e3-4", "source": "3", "target": "4" },
+        { "id": "e4-5", "source": "4", "target": "5" },
+        { "id": "e5-6", "source": "5", "target": "6" }
+      ],
+      "shuffledNodes": [
+        { "id": "1", "position": { "x": 600, "y": 300 }, "data": { "label": "Raw Data" } },
+        { "id": "2", "position": { "x": 200, "y": 100 }, "data": { "label": "Clean Data" } },
+        { "id": "3", "position": { "x": 800, "y": 200 }, "data": { "label": "Split Data" } },
+        { "id": "4", "position": { "x": 100, "y": 400 }, "data": { "label": "Train Model" } },
+        { "id": "5", "position": { "x": 400, "y": 50 }, "data": { "label": "Evaluate" } },
+        { "id": "6", "position": { "x": 900, "y": 400 }, "data": { "label": "Deploy" } }
+      ],
+      "shuffledEdges": [],
+      "scoring": { "correctNodePosition": 20, "timeBonusMs": 50000 },
+      "hint": "Start with data, end with deployment. Model training comes after splitting."
+    },
+    {
+      "id": "neural_net_001",
+      "department": "aiml",
+      "difficulty": 3,
+      "gameMode": "connect",
+      "title": "Neural Network Architecture",
+      "description": "Connect the layers with correct dimensions",
+      "timeLimit": 90,
+      "correctNodes": [
+        { "id": "input", "position": { "x": 0, "y": 150 }, "data": { "label": "Input Layer\n784 nodes" } },
+        { "id": "hidden1", "position": { "x": 250, "y": 100 }, "data": { "label": "Hidden Layer 1\n128 nodes, ReLU" } },
+        { "id": "hidden2", "position": { "x": 500, "y": 100 }, "data": { "label": "Hidden Layer 2\n64 nodes, ReLU" } },
+        { "id": "output", "position": { "x": 750, "y": 150 }, "data": { "label": "Output Layer\n10 nodes, Softmax" } }
+      ],
+      "correctEdges": [
+        { "id": "e-in-h1", "source": "input", "target": "hidden1" },
+        { "id": "e-h1-h2", "source": "hidden1", "target": "hidden2" },
+        { "id": "e-h2-out", "source": "hidden2", "target": "output" }
+      ],
+      "shuffledNodes": [],
+      "shuffledEdges": [],
+      "scoring": { "correctEdgeConnection": 25, "timeBonusMs": 60000 },
+      "hint": "Data flows from input through hidden layers to output"
+    },
+    {
+      "id": "cpu_pipeline_001",
+      "department": "cs",
+      "difficulty": 2,
+      "gameMode": "arrange",
+      "title": "CPU Instruction Cycle",
+      "description": "Arrange the 5 stages of CPU instruction execution in correct order",
+      "timeLimit": 45,
+      "correctNodes": [
+        { "id": "1", "position": { "x": 0, "y": 100 }, "data": { "label": "Fetch" } },
+        { "id": "2", "position": { "x": 200, "y": 100 }, "data": { "label": "Decode" } },
+        { "id": "3", "position": { "x": 400, "y": 100 }, "data": { "label": "Execute" } },
+        { "id": "4", "position": { "x": 600, "y": 100 }, "data": { "label": "Memory" } },
+        { "id": "5", "position": { "x": 800, "y": 100 }, "data": { "label": "Write Back" } }
+      ],
+      "correctEdges": [
+        { "id": "e1-2", "source": "1", "target": "2" },
+        { "id": "e2-3", "source": "2", "target": "3" },
+        { "id": "e3-4", "source": "3", "target": "4" },
+        { "id": "e4-5", "source": "4", "target": "5" }
+      ],
+      "shuffledNodes": [
+        { "id": "3", "position": { "x": 100, "y": 300 }, "data": { "label": "Execute" } },
+        { "id": "1", "position": { "x": 500, "y": 100 }, "data": { "label": "Fetch" } },
+        { "id": "5", "position": { "x": 300, "y": 400 }, "data": { "label": "Write Back" } },
+        { "id": "2", "position": { "x": 700, "y": 200 }, "data": { "label": "Decode" } },
+        { "id": "4", "position": { "x": 200, "y": 50 }, "data": { "label": "Memory" } }
+      ],
+      "shuffledEdges": [],
+      "scoring": { "correctNodePosition": 20, "timeBonusMs": 40000 },
+      "hint": "Fetch → Decode → Execute → Memory → Write Back"
+    },
+    {
+      "id": "circuit_001",
+      "department": "electronics",
+      "difficulty": 2,
+      "gameMode": "connect",
+      "title": "Simple LED Circuit",
+      "description": "Connect components to complete the circuit and light the LED",
+      "timeLimit": 60,
+      "correctNodes": [
+        { "id": "battery", "position": { "x": 0, "y": 150 }, "data": { "label": "Battery\n9V" } },
+        { "id": "switch", "position": { "x": 200, "y": 150 }, "data": { "label": "Switch\n(open)" } },
+        { "id": "resistor", "position": { "x": 400, "y": 150 }, "data": { "label": "Resistor\n330Ω" } },
+        { "id": "led", "position": { "x": 600, "y": 150 }, "data": { "label": "LED\nRed" } },
+        { "id": "ground", "position": { "x": 800, "y": 150 }, "data": { "label": "Ground" } }
+      ],
+      "correctEdges": [
+        { "id": "e-bat-sw", "source": "battery", "target": "switch" },
+        { "id": "e-sw-res", "source": "switch", "target": "resistor" },
+        { "id": "e-res-led", "source": "resistor", "target": "led" },
+        { "id": "e-led-gnd", "source": "led", "target": "ground" }
+      ],
+      "shuffledNodes": [],
+      "shuffledEdges": [
+        { "id": "wrong1", "source": "battery", "target": "led" },
+        { "id": "wrong2", "source": "resistor", "target": "ground" }
+      ],
+      "scoring": { "correctEdgeConnection": 25, "timeBonusMs": 50000 },
+      "hint": "Current flows from battery positive through switch, resistor, LED to ground"
+    },
+    {
+      "id": "sorting_visual_001",
+      "department": "cs",
+      "difficulty": 3,
+      "gameMode": "arrange",
+      "title": "Bubble Sort Pass",
+      "description": "Arrange the array states in correct order for one pass of bubble sort",
+      "timeLimit": 75,
+      "correctNodes": [
+        { "id": "1", "position": { "x": 0, "y": 100 }, "data": { "label": "[5, 2, 8, 1]" } },
+        { "id": "2", "position": { "x": 250, "y": 100 }, "data": { "label": "[2, 5, 8, 1]" } },
+        { "id": "3", "position": { "x": 500, "y": 100 }, "data": { "label": "[2, 5, 8, 1]" } },
+        { "id": "4", "position": { "x": 750, "y": 100 }, "data": { "label": "[2, 5, 1, 8]" } }
+      ],
+      "correctEdges": [
+        { "id": "e1-2", "source": "1", "target": "2" },
+        { "id": "e2-3", "source": "2", "target": "3" },
+        { "id": "e3-4", "source": "3", "target": "4" }
+      ],
+      "shuffledNodes": [
+        { "id": "3", "position": { "x": 400, "y": 300 }, "data": { "label": "[2, 5, 8, 1]" } },
+        { "id": "1", "position": { "x": 100, "y": 100 }, "data": { "label": "[5, 2, 8, 1]" } },
+        { "id": "4", "position": { "x": 700, "y": 200 }, "data": { "label": "[2, 5, 1, 8]" } },
+        { "id": "2", "position": { "x": 300, "y": 400 }, "data": { "label": "[2, 5, 8, 1]" } }
+      ],
+      "shuffledEdges": [],
+      "scoring": { "correctNodePosition": 15, "timeBonusMs": 60000 },
+      "hint": "Bubble sort compares adjacent elements and swaps if out of order"
+    },
+    {
+      "id": "cnn_architecture_001",
+      "department": "aiml",
+      "difficulty": 4,
+      "gameMode": "connect",
+      "title": "CNN Architecture",
+      "description": "Connect the layers of a Convolutional Neural Network in correct order",
+      "timeLimit": 90,
+      "correctNodes": [
+        { "id": "input", "data": { "label": "Input\n224x224x3" } },
+        { "id": "conv1", "data": { "label": "Conv2D\n64 filters" } },
+        { "id": "pool1", "data": { "label": "MaxPool\n2x2" } },
+        { "id": "conv2", "data": { "label": "Conv2D\n128 filters" } },
+        { "id": "pool2", "data": { "label": "MaxPool\n2x2" } },
+        { "id": "fc", "data": { "label": "Fully Connected\n1000 units" } },
+        { "id": "output", "data": { "label": "Softmax\n1000 classes" } }
+      ],
+      "correctEdges": [
+        { "source": "input", "target": "conv1" },
+        { "source": "conv1", "target": "pool1" },
+        { "source": "pool1", "target": "conv2" },
+        { "source": "conv2", "target": "pool2" },
+        { "source": "pool2", "target": "fc" },
+        { "source": "fc", "target": "output" }
+      ],
+      "shuffledNodes": [],
+      "shuffledEdges": [],
+      "scoring": { "correctEdgeConnection": 20, "timeBonusMs": 80000 },
+      "hint": "Convolution → Pooling repeats, then Fully Connected layers"
+    },
+    {
+      "id": "os_memory_001",
+      "department": "cs",
+      "difficulty": 3,
+      "gameMode": "arrange",
+      "title": "Memory Hierarchy",
+      "description": "Arrange memory types from fastest to slowest",
+      "timeLimit": 45,
+      "correctNodes": [
+        { "id": "1", "data": { "label": "Registers" } },
+        { "id": "2", "data": { "label": "L1 Cache" } },
+        { "id": "3", "data": { "label": "L2 Cache" } },
+        { "id": "4", "data": { "label": "RAM" } },
+        { "id": "5", "data": { "label": "SSD" } },
+        { "id": "6", "data": { "label": "HDD" } }
+      ],
+      "correctEdges": [
+        { "source": "1", "target": "2" },
+        { "source": "2", "target": "3" },
+        { "source": "3", "target": "4" },
+        { "source": "4", "target": "5" },
+        { "source": "5", "target": "6" }
+      ],
+      "scoring": { "correctNodePosition": 15, "timeBonusMs": 40000 },
+      "hint": "Closer to CPU = faster but smaller capacity"
+    },
+    {
+      "id": "data_pipeline_001",
+      "department": "cs",
+      "difficulty": 2,
+      "gameMode": "connect",
+      "title": "ETL Pipeline",
+      "description": "Connect the stages of an ETL (Extract, Transform, Load) pipeline",
+      "timeLimit": 50,
+      "correctNodes": [
+        { "id": "source", "data": { "label": "Source DB" } },
+        { "id": "extract", "data": { "label": "Extract" } },
+        { "id": "transform", "data": { "label": "Transform" } },
+        { "id": "load", "data": { "label": "Load" } },
+        { "id": "target", "data": { "label": "Data Warehouse" } }
+      ],
+      "correctEdges": [
+        { "source": "source", "target": "extract" },
+        { "source": "extract", "target": "transform" },
+        { "source": "transform", "target": "load" },
+        { "source": "load", "target": "target" }
+      ],
+      "scoring": { "correctEdgeConnection": 20, "timeBonusMs": 45000 },
+      "hint": "Data flows from source through transformation to destination"
+    }
+  ]
+}

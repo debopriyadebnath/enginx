@@ -4,6 +4,8 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { initializeSocket } from "./socket/socket.js";
 import { getFrontendOrigins } from "./config/cors.js";
+import { realtimeDemoRouter } from "./routes/realtimeDemo.js";
+import { superplaneRouter } from "./routes/superplaneRoutes.js";
 
 export function createServer_() {
   const app: Express = express();
@@ -55,6 +57,12 @@ export function createServer_() {
       description: "A real-time quiz game built with Socket.IO and Express",
     });
   });
+
+  /** Demo: HTTP mirror of the 1v1 realtime event model (for judges / Postman). */
+  app.use("/api/realtime", realtimeDemoRouter);
+
+  /** SuperPlane control-plane API (canvases, etc.) — https://docs.superplane.com */
+  app.use("/api/integrations/superplane", superplaneRouter);
 
   // Initialize Socket.IO event handlers
   initializeSocket(io);
