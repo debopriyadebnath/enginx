@@ -534,32 +534,28 @@ const Home = () => {
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="liquid-glass relative overflow-hidden flex flex-col gap-2 rounded-[24px] p-6 backdrop-blur-2xl [--glass-bg:rgba(0,0,0,0.4)] [--glass-border-start:rgba(111,255,0,0.3)] hover:[--glass-bg:rgba(0,0,0,0.6)] hover:[--glass-bg-accent:rgba(111,255,0,0.05)] hover:shadow-[0_8px_32px_rgba(111,255,0,0.15)] hover:-translate-y-1 transition-all duration-500 group"
+              className="liquid-glass relative flex flex-col gap-2 rounded-[20px] p-5 hover:bg-white/[0.02] transition-all duration-300 group [--glass-border-start:rgba(111,255,0,0.3)] [--glass-bg:rgba(111,255,0,0.02)] [--glass-bg-accent:rgba(111,255,0,0.05)] shadow-[0_0_20px_rgba(0,0,0,0.2)] hover:shadow-[0_0_30px_rgba(111,255,0,0.1)] hover:-translate-y-1"
             >
-              {/* Optional Subtle Glow blob inside */}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-neon/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-              <div className="flex items-center justify-between mb-2 relative z-10">
-                <span className="font-grotesk text-[14px] uppercase text-cream tracking-wide group-hover:text-neon transition-colors">
+              <div className="flex items-center justify-between pb-3 mb-1 border-b border-white/5 relative z-10">
+                <span className="font-grotesk text-[14px] uppercase text-cream group-hover:text-neon transition-colors tracking-wide">
                   Leaderboard
                 </span>
-                <Trophy size={18} className="text-neon group-hover:drop-shadow-[0_0_8px_rgba(111,255,0,0.6)] transition-all" />
+                <Trophy size={18} className="text-neon drop-shadow-[0_0_8px_rgba(111,255,0,0.6)]" />
               </div>
-              
-              <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto pr-2 relative z-10 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 transition-all">
-                {leaderboard.map((row, i) => (
-                  <div
-                    key={row.userId}
-                    className="flex items-center justify-between font-mono text-xs text-cream/85 hover:bg-white/5 rounded-lg px-2 py-1.5 transition-all hover:text-white cursor-default"
-                  >
-                    <span className="truncate pr-2">
-                      <span className="text-white/40 mr-1">{i + 1}.</span> {row.name}
-                    </span>
-                    <span className="shrink-0 text-neon font-bold">{row.score}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-1 text-center font-mono text-[10px] text-cream/45">
+              {leaderboard.map((row, i) => (
+                <div
+                  key={row.userId}
+                  className="flex items-center justify-between font-mono text-xs text-cream/85 rounded-lg px-2 py-1.5 hover:bg-[#6FFF00]/10 hover:scale-[1.02] transition-all cursor-default"
+                >
+                  <span className="truncate pr-2">
+                    <span className={`${i === 0 ? "text-yellow-400 font-bold drop-shadow-[0_0_4px_rgba(250,204,21,0.5)]" : i === 1 ? "text-slate-300 font-bold" : i === 2 ? "text-amber-600 font-bold" : "text-cream/50"}`}>{i + 1}.</span> {row.name}
+                  </span>
+                  <span className="shrink-0 text-neon font-medium drop-shadow-[0_0_5px_rgba(111,255,0,0.3)]">{row.score}</span>
+                </div>
+              ))}
+              <p className="mt-2 text-center font-mono text-[10px] text-cream/40 px-2 leading-relaxed">
                 Updates when you finish quiz or bug finder below
               </p>
             </motion.div>
@@ -570,48 +566,42 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="liquid-glass rounded-[24px] p-6 flex flex-col gap-4 relative overflow-hidden backdrop-blur-2xl [--glass-bg:rgba(0,0,0,0.4)] [--glass-border-start:rgba(168,85,247,0.3)] hover:[--glass-bg:rgba(0,0,0,0.6)] hover:[--glass-bg-accent:rgba(168,85,247,0.05)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.15)] hover:-translate-y-1 transition-all duration-500 group"
+            className="liquid-glass relative rounded-[20px] p-5 flex flex-col gap-4 hover:bg-white/[0.02] transition-all duration-300 group [--glass-border-start:rgba(183,36,255,0.3)] [--glass-bg:rgba(183,36,255,0.02)] [--glass-bg-accent:rgba(183,36,255,0.05)] shadow-[0_0_20px_rgba(0,0,0,0.2)] hover:shadow-[0_0_30px_rgba(183,36,255,0.1)] hover:-translate-y-1"
           >
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-            <div className="flex items-center justify-between relative z-10 mb-2">
-              <span className="font-grotesk text-[14px] text-cream uppercase tracking-wide group-hover:text-purple-400 transition-colors">Daily Quest</span>
+            <div className="flex items-center justify-between pb-2 mb-1 border-b border-white/5">
+              <span className="font-grotesk text-[14px] text-cream uppercase group-hover:text-purple-400 transition-colors">Daily Quest</span>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-neon text-xs bg-neon/10 px-2 py-0.5 rounded flex items-center gap-1"><span className="animate-pulse">⏱</span> 07:49</span>
-                <span className="font-mono text-cream/40 text-[10px] uppercase hover:text-white cursor-pointer transition-colors">VIEW ALL</span>
+                <span className="font-mono text-purple-400 text-[11px] drop-shadow-[0_0_6px_rgba(183,36,255,0.4)]">⏱ 07:49</span>
+                <span className="font-mono text-cream/40 hover:text-cream text-[10px] cursor-pointer transition-colors">VIEW ALL</span>
               </div>
             </div>
-
-            <div className="flex flex-col gap-4 max-h-[240px] overflow-y-auto pr-2 relative z-10 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 transition-all">
-              {QUESTS.map((q, i) => (
-                <div key={i} className="flex flex-col gap-2">
-                  <span className="font-mono text-cream text-sm">{q.name}</span>
-                  <div className="w-full h-1.5 bg-white/10 rounded-full">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(q.progress / q.total) * 100}%` }}
-                      transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
-                      className="h-full bg-neon rounded-full" 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-cream/50 text-xs bg-white/5 px-2 py-0.5 rounded-sm">{q.progress} <span className="text-white/20">/</span> {q.total}</span>
-                    {q.progress >= q.total ? (
-                      <div className="bg-neon/10 p-1.5 rounded-lg">
-                        <CheckCircle size={16} className="text-neon" />
-                      </div>
-                    ) : (
-                      <button className="rounded-[10px] px-3 py-1.5 bg-neon text-[#010828] font-grotesk uppercase text-xs hover:brightness-110 hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-neon/40 relative z-10 cursor-pointer">
-                        Play Now
-                      </button>
-                    )}
-                  </div>
+            {QUESTS.map((q, i) => (
+              <div key={i} className="flex flex-col gap-2 rounded-xl p-2 hover:bg-purple-500/10 hover:-translate-y-0.5 transition-all cursor-default">
+                <span className="font-mono text-cream/90 text-xs">{q.name}</span>
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mt-1">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(q.progress / q.total) * 100}%` }}
+                    transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
+                    className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full shadow-[0_0_8px_rgba(183,36,255,0.5)]" 
+                  />
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="font-mono text-cream/40 text-[10px]">{q.progress}/{q.total}</span>
+                  {q.progress >= q.total ? (
+                    <CheckCircle size={16} className="text-neon drop-shadow-[0_0_5px_rgba(111,255,0,0.5)]" />
+                  ) : (
+                    <button className="rounded-lg px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 font-grotesk uppercase text-[10px] hover:bg-purple-500 hover:text-white hover:border-purple-400 hover:shadow-[0_0_10px_rgba(183,36,255,0.5)] active:scale-95 transition-all">
+                      Play Now
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </motion.div>
 
-          {/* DOWNLOAD APP */}
+          {/* DOWNLOAD APP - Temporarily hidden as per request */}
+          {/*
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -634,6 +624,7 @@ const Home = () => {
               <button className="flex-1 liquid-glass rounded-[12px] px-2 py-2.5 font-mono text-[10px] uppercase tracking-wider text-cream/70 hover:bg-white/10 hover:text-white hover:border-white/30 transition-all cursor-pointer text-center">▶️ Play Store</button>
             </div>
           </motion.div>
+          */}
         </aside>
       </div>
 
