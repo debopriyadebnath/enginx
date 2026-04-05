@@ -5,10 +5,14 @@ export type PresenceUser = {
   username: string;
 };
 
+export type ChallengeGameType = "quiz" | "bug_finder";
+
 export type ChallengeReceivedPayload = {
   challengeId: string;
   fromUserId: string;
   fromUsername: string;
+  /** Omitted / `quiz` = live quiz; `bug_finder` = CS bug-finder blanks */
+  gameType?: ChallengeGameType;
 };
 
 export type MultiplayerPlayer = {
@@ -39,6 +43,7 @@ export type QuestionEventPayload = {
 export type AnswerScoreEntry = {
   answer: string | null;
   isCorrect: boolean;
+  /** Round delta: positive for correct, 0 or negative if wrong-answer penalty applies */
   points: number;
 };
 

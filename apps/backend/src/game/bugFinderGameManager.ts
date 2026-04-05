@@ -1,32 +1,28 @@
-import type { GameRoom, Player, LeaderboardEntry } from "../types/types.js";
-import type { QuestionJson } from "./packQuestion.js";
-import { pickRoundQuestions } from "./packLoader.js";
-import { checkAnswerJson } from "./quizEvaluator.js";
+import type { Player, LeaderboardEntry } from "../types/types.js";
+import type { CodeChallenge } from "./bugFinderTypes.js";
+import {
+  checkBlankAnswer,
+  pickBugFinderRound,
+  pointsForBug,
+} from "./bugFinderCodes.js";
 
-const ROUNDS_PER_MATCH = 10;
+const ROUNDS_PER_MATCH = 8;
 
-/** Points removed on wrong answer (same for both players). Total match score never goes below 0. */
-const WRONG_ANSWER_PENALTY = Math.max(
+const WRONG_PENALTY = Math.max(
   0,
   parseInt(process.env.MULTIPLAYER_WRONG_PENALTY ?? "2", 10) || 0
 );
 
 type QueuedPlayer = { socketId: string; convexUserId: string };
 
-class GameManager {
-  private rooms: Map<string, GameRoom> = new Map();
+class BugFinderGameManager {
+  private rooms: Map<string, BugFinderRoom> = new Map();
   private waitingQueue: QueuedPlayer[] = [];
-  private roomTimers: Map<string, NodeJS.Timeout> = new Map();
 
-  /**
-   * Add player to waiting queue and auto-match when a *different* socket joins.
-   * Guards: no duplicate queue entries; never match a socket with itself (double "Find match").
-   */
   joinGame(playerSocketId: string, convexUserId: string): string {
     if (this.waitingQueue.some((q) => q.socketId === playerSocketId)) {
       return "";
     }
-
     if (this.waitingQueue.length >= 1) {
       const other = this.waitingQueue.shift()!;
       if (other.socketId === playerSocketId) {
@@ -39,22 +35,17 @@ class GameManager {
         [other.convexUserId, convexUserId]
       );
     }
-
     this.waitingQueue.push({ socketId: playerSocketId, convexUserId });
     return "";
   }
 
-  /**
-   * Create a new game room with two socket ids and display names (queue or challenge).
-   */
   createRoomFromPair(
     socketIds: [string, string],
     usernames: [string, string],
     convexUserIds?: [string, string]
   ): string {
-    const roomId = `room-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const roundQuestions = pickRoundQuestions(ROUNDS_PER_MATCH, roomId);
-
+    const roomId = `bf-room-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const challenges = pickBugFinderRound(ROUNDS_PER_MATCH, roomId);
     const uid0 = convexUserIds?.[0] ?? socketIds[0];
     const uid1 = convexUserIds?.[1] ?? socketIds[1];
 
@@ -83,97 +74,79 @@ class GameManager {
       ],
     ]);
 
-    const room: GameRoom = {
+    const room: BugFinderRoom = {
       id: roomId,
       players,
-      roundQuestions,
+      challenges,
       currentQuestionIndex: 0,
       gameState: "playing",
       startTime: Date.now(),
       questionStartTime: Date.now(),
     };
-
     this.rooms.set(roomId, room);
     return roomId;
   }
 
-  getRoom(roomId: string): GameRoom | undefined {
+  getRoom(roomId: string): BugFinderRoom | undefined {
     return this.rooms.get(roomId);
   }
 
-  getCurrentQuestion(roomId: string): QuestionJson | null {
+  getCurrentChallenge(roomId: string): CodeChallenge | null {
     const room = this.rooms.get(roomId);
     if (!room) return null;
-    return room.roundQuestions[room.currentQuestionIndex] ?? null;
+    return room.challenges[room.currentQuestionIndex] ?? null;
   }
 
   getRoundCount(roomId: string): number {
     const room = this.rooms.get(roomId);
-    return room?.roundQuestions.length ?? 0;
+    return room?.challenges.length ?? 0;
   }
 
   recordAnswer(roomId: string, playerId: string, answer: string): void {
     const room = this.rooms.get(roomId);
     if (!room) return;
-
     const player = room.players.get(playerId);
-    if (player) {
-      player.currentAnswer = answer;
-    }
+    if (player) player.currentAnswer = answer;
   }
 
-  /**
-   * Per-round deltas: +`question.points` if correct (same for both players),
-   * −`WRONG_ANSWER_PENALTY` if wrong (total match score floored at 0).
-   */
   calculateRoundScores(roomId: string): Map<string, number> {
     const room = this.rooms.get(roomId);
     if (!room) return new Map();
-
-    const question = room.roundQuestions[room.currentQuestionIndex];
-    if (!question) return new Map();
+    const q = room.challenges[room.currentQuestionIndex];
+    if (!q) return new Map();
 
     const scores = new Map<string, number>();
-    const ptsPerCorrect = question.points;
-
     room.players.forEach((player) => {
       const raw = player.currentAnswer ?? "";
-      const correct = checkAnswerJson(question, raw);
+      const correct = checkBlankAnswer(q, raw);
       if (correct) {
-        player.score += ptsPerCorrect;
-        scores.set(player.socketId, ptsPerCorrect);
+        const pts = pointsForBug(q, true);
+        player.score += pts;
+        scores.set(player.socketId, pts);
+      } else if (WRONG_PENALTY > 0) {
+        const before = player.score;
+        player.score = Math.max(0, player.score - WRONG_PENALTY);
+        const lost = before - player.score;
+        scores.set(player.socketId, -lost);
       } else {
-        if (WRONG_ANSWER_PENALTY > 0) {
-          const before = player.score;
-          player.score = Math.max(0, player.score - WRONG_ANSWER_PENALTY);
-          const lost = before - player.score;
-          scores.set(player.socketId, -lost);
-        } else {
-          scores.set(player.socketId, 0);
-        }
+        scores.set(player.socketId, 0);
       }
     });
-
     return scores;
   }
 
   nextQuestion(roomId: string): boolean {
     const room = this.rooms.get(roomId);
     if (!room) return false;
-
     room.currentQuestionIndex++;
-
-    room.players.forEach((player) => {
-      player.currentAnswer = null;
+    room.players.forEach((p) => {
+      p.currentAnswer = null;
     });
-
     room.questionStartTime = Date.now();
-
-    if (room.currentQuestionIndex >= room.roundQuestions.length) {
+    if (room.currentQuestionIndex >= room.challenges.length) {
       room.gameState = "ended";
       return false;
     }
-
     room.gameState = "question";
     return true;
   }
@@ -181,23 +154,16 @@ class GameManager {
   getLeaderboard(roomId: string): LeaderboardEntry[] {
     const room = this.rooms.get(roomId);
     if (!room) return [];
-
     return Array.from(room.players.values())
-      .map((player) => ({
-        userId: player.userId,
-        username: player.username,
-        score: player.score,
+      .map((p) => ({
+        userId: p.userId,
+        username: p.username,
+        score: p.score,
       }))
       .sort((a, b) => b.score - a.score);
   }
 
   endGame(roomId: string): void {
-    const timer = this.roomTimers.get(roomId);
-    if (timer) {
-      clearTimeout(timer);
-      this.roomTimers.delete(roomId);
-    }
-
     this.rooms.delete(roomId);
   }
 
@@ -207,23 +173,25 @@ class GameManager {
     );
   }
 
-  isInQueue(playerSocketId: string): boolean {
-    return this.waitingQueue.some((q) => q.socketId === playerSocketId);
-  }
-
-  getAllRooms(): GameRoom[] {
+  getAllRooms(): BugFinderRoom[] {
     return Array.from(this.rooms.values());
   }
 
   updatePlayerName(roomId: string, playerId: string, username: string): void {
     const room = this.rooms.get(roomId);
-    if (!room) return;
-
-    const player = room.players.get(playerId);
-    if (player) {
-      player.username = username;
-    }
+    const player = room?.players.get(playerId);
+    if (player) player.username = username;
   }
 }
 
-export const gameManager = new GameManager();
+interface BugFinderRoom {
+  id: string;
+  players: Map<string, Player>;
+  challenges: CodeChallenge[];
+  currentQuestionIndex: number;
+  gameState: string;
+  startTime: number;
+  questionStartTime: number;
+}
+
+export const bugFinderGameManager = new BugFinderGameManager();

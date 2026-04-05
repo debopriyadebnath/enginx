@@ -80,3 +80,4 @@ export function useAuthenticatedGameSocket(): AuthenticatedSocketState & {
 
 export { useMultiplayerQuiz } from "./useMultiplayerQuiz";
 export type { UseMultiplayerQuiz } from "./useMultiplayerQuiz";
+export { useBugFinderMultiplayer } from "./useBugFinderMultiplayer";

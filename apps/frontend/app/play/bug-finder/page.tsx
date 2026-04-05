@@ -298,9 +298,17 @@ function BugFinderInner() {
 
       <header className="sticky top-0 z-40 border-b border-white/10 liquid-glass px-4 py-3">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
-          <Link href="/dashboard" className="font-mono text-xs text-neon hover:underline">
-            ← Dashboard
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/dashboard" className="font-mono text-xs text-neon hover:underline">
+              ← Dashboard
+            </Link>
+            <Link
+              href="/play/bug-finder/multi"
+              className="font-mono text-xs text-amber-400 hover:underline"
+            >
+              1v1 live →
+            </Link>
+          </div>
           <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-cream/80">
             <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-neon">
               {displayScore} pts

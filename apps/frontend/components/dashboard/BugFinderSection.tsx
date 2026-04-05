@@ -23,6 +23,10 @@ export function BugFinderSection() {
     router.push(`/play/bug-finder?${q.toString()}`);
   }
 
+  function goMulti() {
+    router.push("/play/bug-finder/multi");
+  }
+
   return (
     <section id="bug-finder" className="mb-10 scroll-mt-8">
       <div className="mb-4 flex items-center gap-2">
@@ -55,8 +59,8 @@ export function BugFinderSection() {
               then review explanations when you finish the run.
             </p>
             <ul className="mt-4 space-y-1.5 font-mono text-xs text-cream/55">
-              <li>· Filter by concept or play across all topics</li>
-              <li>· Points sync like the quiz arena</li>
+              <li>· Solo: filter by concept, fill blanks, review explanations</li>
+              <li>· 1v1 live: same C challenges for both players (challenge or queue)</li>
             </ul>
           </div>
 
@@ -88,13 +92,22 @@ export function BugFinderSection() {
               className="mt-2 w-full rounded-[12px] border border-white/15 bg-[#010828]/70 px-4 py-3 font-mono text-sm text-cream tabular-nums focus:border-amber-400/50 focus:outline-none"
             />
 
-            <button
-              type="button"
-              onClick={() => start()}
-              className="mt-5 w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(245,158,11,0.25)] transition hover:brightness-110"
-            >
-              Open terminal
-            </button>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => start()}
+                className="w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(245,158,11,0.25)] transition hover:brightness-110"
+              >
+                Solo run
+              </button>
+              <button
+                type="button"
+                onClick={() => goMulti()}
+                className="w-full rounded-[14px] border border-amber-400/50 bg-amber-500/10 py-3 font-grotesk uppercase tracking-wide text-amber-100 transition hover:bg-amber-500/20"
+              >
+                1v1 live (multiplayer)
+              </button>
+            </div>
           </div>
         </div>
       </div>
