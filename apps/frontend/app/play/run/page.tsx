@@ -262,7 +262,7 @@ function PlayRunInner() {
         <div
           className="fixed inset-0 z-5 pointer-events-none opacity-[0.08]"
           style={{
-            backgroundImage: 'url(/texture.png)',
+            backgroundColor: '#010828',
             backgroundSize: '200px 200px',
             backgroundRepeat: 'repeat',
           }}

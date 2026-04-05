@@ -18,6 +18,7 @@ import {
   CheckCircle, QrCode, Gamepad2, ClipboardList,
   Trophy, Radio, Users, Plus, Mic
 } from 'lucide-react';
+import { motion, useScroll, useTransform } from "framer-motion";
 
 const NAV_ITEMS: {
   icon: typeof Gamepad2;
@@ -205,7 +206,7 @@ const Home = () => {
       {/* Texture overlay */}
       <div
         className="fixed inset-0 z-50 pointer-events-none"
-        style={{ backgroundImage: 'url(/texture.png)', backgroundSize: 'cover', mixBlendMode: 'lighten', opacity: 0.6 }}
+        style={{ backgroundSize: 'cover', mixBlendMode: 'lighten', opacity: 0.6 }}
       />
 
       {/* TOP BAR */}
@@ -389,7 +390,13 @@ const Home = () => {
               <QuizArenaSection />
             </motion.div>
 
-            <BugFinderSection />
+            <motion.div variants={sectionVariants} viewport={{ once: true, margin: "-100px" }}>
+              <BugFinderSection />
+            </motion.div>
+
+            <motion.div variants={sectionVariants} viewport={{ once: true, margin: "-100px" }}>
+              <MindSnapSection />
+            </motion.div>
 
             {/* GAME CATEGORIES */}
             <motion.div variants={sectionVariants}>
@@ -435,63 +442,71 @@ const Home = () => {
                         <span className="font-mono text-neon/70 text-xs hover:text-neon cursor-pointer transition-colors">SEE ALL →</span>
                       </div>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {cards.map((game) => {
-                      const GameIcon = game.icon;
-                      return (
-                        <div
-                          key={game.title}
-                          role={game.scrollTo ? "button" : undefined}
-                          tabIndex={game.scrollTo ? 0 : undefined}
-                          onClick={() => {
-                            if (game.scrollTo === "bug-finder") {
-                              document.getElementById("bug-finder")?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (
-                              game.scrollTo === "bug-finder" &&
-                              (e.key === "Enter" || e.key === " ")
-                            ) {
-                              e.preventDefault();
-                              document.getElementById("bug-finder")?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                            }
-                          }}
-                          className={`liquid-glass rounded-[24px] p-5 flex flex-col gap-3 hover:bg-white/10 hover:scale-[1.02] transition-all group ${
-                            game.scrollTo ? "cursor-pointer" : ""
-                          }`}
-                        >
-                          <div className={`rounded-[14px] w-12 h-12 flex items-center justify-center ${styles.bg}`}>
-                            <GameIcon size={22} className={styles.text} />
-                          </div>
-                          <span className="font-grotesk text-[15px] text-cream uppercase mt-1">{game.title}</span>
-                          <span className="font-mono text-cream/50 text-xs leading-relaxed line-clamp-2">{game.desc}</span>
-                          <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono ${
-                              game.mode === 'SOLO'
-                                ? 'bg-[#6FFF00]/10 text-neon'
-                                : 'bg-purple-500/20 text-purple-400'
-                            }`}>
-                              {game.mode}
-                            </span>
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#b724ff] to-[#7c3aed] rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 hover:scale-110 transition">
-                              <ChevronRight size={14} className="text-white" />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {cards.map((game, idx) => {
+                          const GameIcon = game.icon;
+                          return (
+                            <motion.div
+                              key={game.title}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: idx * 0.05 }}
+                              role={(game.scrollTo || game.href) ? "button" : undefined}
+                              tabIndex={(game.scrollTo || game.href) ? 0 : undefined}
+                              onClick={() => {
+                                if (game.scrollTo === "bug-finder") {
+                                  document.getElementById("bug-finder")?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                } else if (game.href) {
+                                  router.push(game.href);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  if (game.scrollTo === "bug-finder") {
+                                    document.getElementById("bug-finder")?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  } else if (game.href) {
+                                    router.push(game.href);
+                                  }
+                                }
+                              }}
+                              className={`liquid-glass rounded-[24px] p-5 flex flex-col gap-3 hover:bg-white/10 hover:scale-[1.02] transition-all group ${
+                                game.scrollTo ? "cursor-pointer" : ""
+                              }`}
+                            >
+                              <div className={`rounded-[14px] w-12 h-12 flex items-center justify-center transition-transform group-hover:rotate-6 ${styles.bg}`}>
+                                <GameIcon size={22} className={styles.text} />
+                              </div>
+                              <span className="font-grotesk text-[15px] text-cream uppercase mt-1 group-hover:text-neon transition-colors">{game.title}</span>
+                              <span className="font-mono text-cream/50 text-xs leading-relaxed line-clamp-2">{game.desc}</span>
+                              <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono ${
+                                  game.mode === 'SOLO'
+                                    ? 'bg-[#6FFF00]/10 text-neon'
+                                    : 'bg-purple-500/20 text-purple-400'
+                                }`}>
+                                  {game.mode}
+                                </span>
+                                <div className="w-8 h-8 bg-gradient-to-br from-[#b724ff] to-[#7c3aed] rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 hover:scale-110 transition group-hover:shadow-purple-500/50">
+                                  <ChevronRight size={14} className="text-white" />
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
         </main>
 
         {/* RIGHT SIDEBAR */}

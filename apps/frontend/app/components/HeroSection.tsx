@@ -26,6 +26,7 @@ const HeroSection = () => {
       <motion.div style={{ y }} className="absolute inset-0 w-full h-full">
         <video
           autoPlay loop muted playsInline
+          preload="auto"
           className="w-full h-full object-cover scale-110" // Slightly scaled to avoid edges during parallax
         >
           <source src={HERO_VIDEO} type="video/mp4" />

@@ -75,8 +75,14 @@ export function BugFinderSection() {
               then review explanations when you finish the run.
             </p>
             <ul className="mt-4 space-y-1.5 font-mono text-xs text-cream/55">
-              <li>· Solo: filter by concept, fill blanks, review explanations</li>
-              <li>· 1v1 live: same C challenges for both players (challenge or queue)</li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 bg-amber-400 rounded-full" />
+                Solo: filter by concept, fill blanks, review explanations
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 bg-amber-400 rounded-full" />
+                1v1 live: same C challenges for both players (challenge or queue)
+              </li>
             </ul>
           </motion.div>
 
@@ -114,22 +120,26 @@ export function BugFinderSection() {
             />
 
             <div className="mt-5 flex flex-col gap-2">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => start()}
-                className="w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(245,158,11,0.25)] transition hover:brightness-110"
+                className="w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_24px_rgba(245,158,11,0.25)] transition-all hover:brightness-110 font-bold active:shadow-inner"
               >
                 Solo run
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => goMulti()}
-                className="w-full rounded-[14px] border border-amber-400/50 bg-amber-500/10 py-3 font-grotesk uppercase tracking-wide text-amber-100 transition hover:bg-amber-500/20"
+                className="w-full rounded-[14px] border border-amber-400/50 bg-amber-500/10 py-3 font-grotesk uppercase tracking-wide text-amber-100 transition-all hover:bg-amber-500/20 font-medium"
               >
                 1v1 live (multiplayer)
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
       {showCountdown && <MascotCountdown onComplete={handleCountdownComplete} />}

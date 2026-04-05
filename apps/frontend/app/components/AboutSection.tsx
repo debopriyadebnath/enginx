@@ -1,6 +1,4 @@
-'use client';
-
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ChevronRight, Cpu, Layers, Zap, Terminal } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ScrollPath } from './ScrollPath';
@@ -34,6 +32,32 @@ const CARDS = [
     code: `export const getLeaderboard = async () => {\n  return await db.query("users");\n};`
   },
 ];
+
+const LazyVideo = ({ src }: { src: string }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false, amount: 0.1 });
+
+  return (
+    <div ref={ref} className="absolute inset-0 w-full h-full">
+      {isInView ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="none"
+          className="w-full h-full object-cover transition-opacity duration-700 opacity-100"
+        >
+          <source src={src} type="video/mp4" />
+        </video>
+      ) : (
+        <div className="w-full h-full bg-[#010828] flex items-center justify-center font-mono text-[10px] text-cream/20 uppercase tracking-widest">
+          Loading Visuals...
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TiltCard = ({ children }: { children: React.ReactNode }) => {
   const x = useMotionValue(0);
@@ -158,12 +182,7 @@ const AboutSection = () => {
                 <TiltCard>
                   <div className="liquid-glass rounded-[32px] p-[18px] hover:bg-white/10 transition-colors cursor-pointer group/card focus:outline-none backdrop-blur-3xl shadow-[0_48px_100px_rgba(0,0,0,0.5)]">
                     <div className="relative w-full pb-[100%] rounded-[24px] overflow-hidden">
-                      <video
-                        autoPlay loop muted playsInline
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110"
-                      >
-                        <source src={card.video} type="video/mp4" />
-                      </video>
+                      <LazyVideo src={card.video} />
                       
                       {/* Inner Glass Badge */}
                       <div className="absolute top-4 right-4 liquid-glass rounded-full px-3 py-1 flex items-center gap-2 border border-white/10">
