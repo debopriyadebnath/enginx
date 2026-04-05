@@ -3,9 +3,22 @@ import type { CustomSocket } from "../types/types.js";
 import { socketAuthMiddleware } from "../middleware/auth.js";
 import { gameManager } from "../game/gameManager.js";
 import {
+  createChallenge,
+  deleteChallenge,
+  emitToUser,
+  getChallenge,
+  getPresenceList,
+  getUsernameForUser,
+  pruneExpiredChallenges,
+  registerPresence,
+  removeSocket,
+  clearChallengesForUser,
+} from "../presence/presenceManager.js";
+import {
+  MULTIPLAYER_QUESTION_SECONDS,
   checkAnswerJson,
   correctAnswerDisplay,
-  packQuestionToPayload,
+  packQuestionToPayloadMultiplayer,
 } from "../game/quizEvaluator.js";
 
 const ANSWER_DISPLAY_TIMEOUT = 3000; // 3 seconds to show answer
@@ -14,6 +27,35 @@ const NEXT_QUESTION_DELAY = 1000; // 1 second before next question
 interface RoomState {
   questionTimer?: NodeJS.Timeout;
   answerTimer?: NodeJS.Timeout;
+}
+
+function broadcastPresence(io: Server): void {
+  io.emit("presence_update", { users: getPresenceList() });
+}
+
+function beginGame(io: Server, roomId: string): void {
+  const room = gameManager.getRoom(roomId);
+  if (!room) return;
+
+  room.players.forEach((_, playerSocketId) => {
+    const playerSocket = io.sockets.sockets.get(playerSocketId);
+    playerSocket?.join(roomId);
+  });
+
+  console.log(`[GAME_START] Room ${roomId} started with 2 players`);
+
+  io.to(roomId).emit("game-started", {
+    roomId,
+    players: Array.from(room.players.values()).map((p) => ({
+      socketId: p.socketId,
+      username: p.username,
+      score: p.score,
+    })),
+  });
+
+  setTimeout(() => {
+    sendQuestion(io, roomId);
+  }, NEXT_QUESTION_DELAY);
 }
 
 export const initializeSocket = (io: Server) => {
@@ -25,7 +67,123 @@ export const initializeSocket = (io: Server) => {
     console.log(`[CONNECT] User ${userId} connected - Socket ID: ${socket.id}`);
 
     /**
-     * Player joins the game queue
+     * Lobby: register display name and receive `presence_update` broadcasts.
+     */
+    socket.on("register_presence", (data: { username?: string }) => {
+      try {
+        if (!userId) return;
+        const username =
+          data?.username?.trim() || `Player-${userId.slice(-4)}`;
+        registerPresence(socket.id, userId, username);
+        broadcastPresence(io);
+      } catch (e) {
+        console.error("[REGISTER_PRESENCE]", e);
+      }
+    });
+
+    /**
+     * Challenge another online user (by Convex user id). They receive `challenge_received`.
+     */
+    socket.on(
+      "challenge_user",
+      (
+        data: { targetUserId: string; username?: string },
+        callback: (ack: {
+          ok: boolean;
+          challengeId?: string;
+          error?: string;
+        }) => void
+      ) => {
+        try {
+          if (!userId) {
+            callback({ ok: false, error: "auth" });
+            return;
+          }
+          const fromUsername =
+            data.username?.trim() || `Player-${userId.slice(-4)}`;
+          registerPresence(socket.id, userId, fromUsername);
+
+          for (const c of pruneExpiredChallenges()) {
+            emitToUser(io, c.fromUserId, "challenge_expired", {
+              challengeId: c.id,
+            });
+            emitToUser(io, c.toUserId, "challenge_expired", { challengeId: c.id });
+          }
+
+          const rec = createChallenge(
+            userId,
+            data.targetUserId,
+            socket.id,
+            fromUsername
+          );
+          if (!rec) {
+            callback({ ok: false, error: "offline_or_self" });
+            return;
+          }
+
+          emitToUser(io, data.targetUserId, "challenge_received", {
+            challengeId: rec.id,
+            fromUserId: userId,
+            fromUsername: rec.fromUsername,
+          });
+
+          callback({ ok: true, challengeId: rec.id });
+        } catch (error) {
+          console.error("[CHALLENGE_USER]", error);
+          callback({ ok: false, error: "server" });
+        }
+      }
+    );
+
+    /**
+     * Accept or decline an incoming challenge (only the target user).
+     */
+    socket.on(
+      "challenge_response",
+      (
+        data: { challengeId: string; accept: boolean },
+        callback: (ack: { ok: boolean; error?: string; roomId?: string }) => void
+      ) => {
+        try {
+          if (!userId) {
+            callback({ ok: false, error: "auth" });
+            return;
+          }
+          const c = getChallenge(data.challengeId);
+          if (!c || c.toUserId !== userId) {
+            callback({ ok: false, error: "invalid" });
+            return;
+          }
+
+          deleteChallenge(data.challengeId);
+
+          if (!data.accept) {
+            emitToUser(io, c.fromUserId, "challenge_declined", {
+              challengeId: c.id,
+              byUserId: userId,
+            });
+            callback({ ok: true });
+            return;
+          }
+
+          const nameA = c.fromUsername;
+          const nameB = getUsernameForUser(userId);
+          const roomId = gameManager.createRoomFromPair(
+            [c.fromSocketId, socket.id],
+            [nameA, nameB]
+          );
+
+          beginGame(io, roomId);
+          callback({ ok: true, roomId });
+        } catch (error) {
+          console.error("[CHALLENGE_RESPONSE]", error);
+          callback({ ok: false, error: "server" });
+        }
+      }
+    );
+
+    /**
+     * Legacy: quick queue match (optional)
      */
     socket.on("join-game", (data: { username?: string }, callback) => {
       try {
@@ -33,25 +191,15 @@ export const initializeSocket = (io: Server) => {
         const roomId = gameManager.joinGame(socket.id);
 
         if (!roomId) {
-          // Waiting for opponent
           socket.emit("waiting-for-opponent");
           callback({ status: "waiting" });
         } else {
-          // Game started
           const room = gameManager.getRoom(roomId);
           if (room) {
             gameManager.updatePlayerName(roomId, socket.id, username);
-
-            // Ensure every matched player socket is in the same room.
-            room.players.forEach((_, playerSocketId) => {
-              const playerSocket = io.sockets.sockets.get(playerSocketId);
-              playerSocket?.join(roomId);
-            });
-
-            console.log(`[GAME_START] Room ${roomId} started with 2 players`);
-
-            // Notify both players that game started
-            io.to(roomId).emit("game-started", {
+            beginGame(io, roomId);
+            callback({
+              status: "game_started",
               roomId,
               players: Array.from(room.players.values()).map((p) => ({
                 socketId: p.socketId,
@@ -59,13 +207,6 @@ export const initializeSocket = (io: Server) => {
                 score: p.score,
               })),
             });
-
-            // Send first question after a short delay
-            setTimeout(() => {
-              sendQuestion(io, roomId);
-            }, NEXT_QUESTION_DELAY);
-
-            callback({ status: "game_started", roomId });
           }
         }
       } catch (error) {
@@ -113,7 +254,8 @@ export const initializeSocket = (io: Server) => {
           roomId: data.roomId,
           gameState: room.gameState,
           questionIndex: room.currentQuestionIndex,
-          question: question ? packQuestionToPayload(question) : null,
+          totalQuestions: gameManager.getRoundCount(data.roomId),
+          question: question ? packQuestionToPayloadMultiplayer(question) : null,
           leaderboard,
           players: Array.from(room.players.values()).map((p) => ({
             socketId: p.socketId,
@@ -133,6 +275,16 @@ export const initializeSocket = (io: Server) => {
     socket.on("disconnect", () => {
       console.log(`[DISCONNECT] User ${userId} disconnected`);
       gameManager.removeFromQueue(socket.id);
+
+      const leftUserId = removeSocket(socket.id);
+      if (leftUserId) {
+        for (const ch of clearChallengesForUser(leftUserId)) {
+          const peer =
+            ch.fromUserId === leftUserId ? ch.toUserId : ch.fromUserId;
+          emitToUser(io, peer, "challenge_cancelled", { challengeId: ch.id });
+        }
+        broadcastPresence(io);
+      }
 
       // Find and clean up any room the player was in
       gameManager.getAllRooms().forEach((room) => {
@@ -174,7 +326,7 @@ function sendQuestion(io: Server, roomId: string) {
   io.to(roomId).emit("question", {
     questionIndex: room.currentQuestionIndex,
     totalQuestions: totalRounds,
-    question: packQuestionToPayload(question),
+    question: packQuestionToPayloadMultiplayer(question),
   });
 
   // Set timer for answer submission
@@ -229,5 +381,5 @@ function sendQuestion(io: Server, roomId: string) {
         }, 5000);
       }
     }, ANSWER_DISPLAY_TIMEOUT);
-  }, question.timeLimit * 1000);
+  }, MULTIPLAYER_QUESTION_SECONDS * 1000);
 }

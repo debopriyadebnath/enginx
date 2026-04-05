@@ -5,20 +5,29 @@ import type { Socket } from "socket.io-client";
 import { rawSelectionToAnswerText } from "@/lib/quizFromPack";
 import type {
   AnswerTimeUpPayload,
+  ChallengeReceivedPayload,
   GameEndedPayload,
   GameStartedPayload,
+  GetStateAck,
   JoinGameAck,
   LeaderboardEntry,
   MultiplayerPlayer,
+  PresenceUser,
   QuestionEventPayload,
 } from "@/lib/multiplayerTypes";
 
 export type MultiplayerPhase =
   | "idle"
-  | "waiting"
+  | "waiting_challenge"
   | "playing"
   | "ended"
   | "aborted";
+
+export type UseMultiplayerQuizOptions = {
+  displayName: string;
+  /** Convex `users` id — required for presence + challenges */
+  myUserId: string | null;
+};
 
 export type UseMultiplayerQuiz = {
   phase: MultiplayerPhase;
@@ -26,15 +35,18 @@ export type UseMultiplayerQuiz = {
   players: MultiplayerPlayer[];
   leaderboard: LeaderboardEntry[];
   currentRound: QuestionEventPayload | null;
-  /** Local countdown target (ms) for active question */
   deadlineAt: number | null;
   answer: string;
   setAnswer: (v: string) => void;
   hasSubmitted: boolean;
   lastReveal: AnswerTimeUpPayload | null;
   mySocketId: string | null;
+  presenceUsers: PresenceUser[];
+  incomingChallenge: ChallengeReceivedPayload | null;
+  sendChallenge: (targetUserId: string) => void;
+  respondChallenge: (challengeId: string, accept: boolean) => void;
+  /** Legacy queue match (optional) */
   findMatch: (username: string) => void;
-  /** Ignores duplicate taps while already in queue */
   findMatchSafe: (username: string) => void;
   submitAnswer: () => void;
   resetToLobby: () => void;
@@ -43,8 +55,11 @@ export type UseMultiplayerQuiz = {
 
 export function useMultiplayerQuiz(
   socket: Socket | null,
-  connected: boolean
+  connected: boolean,
+  options: UseMultiplayerQuizOptions
 ): UseMultiplayerQuiz {
+  const { displayName, myUserId } = options;
+
   const [phase, setPhase] = useState<MultiplayerPhase>("idle");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
@@ -59,11 +74,13 @@ export function useMultiplayerQuiz(
     null
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
+  const [incomingChallenge, setIncomingChallenge] =
+    useState<ChallengeReceivedPayload | null>(null);
 
   const mySocketIdRef = useRef<string | null>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
-  /** Avoid duplicate emits when the timer hits 0 (Strict Mode / rapid ticks). */
   const submitSentForRoundRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -78,14 +95,21 @@ export function useMultiplayerQuiz(
     };
   }, [socket]);
 
-  /** Queue is keyed by socket id — if we disconnect while waiting, we are no longer in queue. */
+  /** Register in lobby so you appear in others’ online lists */
+  useEffect(() => {
+    if (!socket?.connected || !myUserId) return;
+    socket.emit("register_presence", {
+      username: displayName.trim() || undefined,
+    });
+  }, [socket, connected, displayName, myUserId]);
+
   useEffect(() => {
     if (!socket) return;
     const onDisconnect = (reason: string) => {
-      if (phaseRef.current === "waiting") {
+      if (phaseRef.current === "waiting_challenge") {
         setPhase("idle");
         setErrorMessage(
-          `Disconnected (${reason}). Tap Find match again after reconnect.`
+          `Disconnected (${reason}). Try again after reconnect.`
         );
       }
     };
@@ -107,17 +131,49 @@ export function useMultiplayerQuiz(
     setHasSubmitted(false);
     setLastReveal(null);
     setErrorMessage(null);
+    setIncomingChallenge(null);
   }, []);
 
   useEffect(() => {
     if (!socket) return;
 
+    const onPresenceUpdate = (data: { users: PresenceUser[] }) => {
+      setPresenceUsers(
+        myUserId
+          ? data.users.filter((u) => u.userId !== myUserId)
+          : data.users
+      );
+    };
+
+    const onChallengeReceived = (data: ChallengeReceivedPayload) => {
+      setIncomingChallenge(data);
+      setErrorMessage(null);
+    };
+
+    const onChallengeDeclined = () => {
+      setPhase("idle");
+      setErrorMessage("They declined the challenge.");
+    };
+
+    const onChallengeCancelled = () => {
+      setPhase("idle");
+      setIncomingChallenge(null);
+      setErrorMessage("Challenge cancelled (other player went offline).");
+    };
+
+    const onChallengeExpired = () => {
+      setPhase("idle");
+      setIncomingChallenge(null);
+      setErrorMessage("Challenge expired.");
+    };
+
     const onWaiting = () => {
-      setPhase("waiting");
+      setPhase("waiting_challenge");
       setErrorMessage(null);
     };
 
     const onGameStarted = (data: GameStartedPayload) => {
+      setIncomingChallenge(null);
       setRoomId(data.roomId);
       setPlayers(data.players);
       setPhase("playing");
@@ -160,6 +216,11 @@ export function useMultiplayerQuiz(
       setErrorMessage(data.message ?? "Socket error");
     };
 
+    socket.on("presence_update", onPresenceUpdate);
+    socket.on("challenge_received", onChallengeReceived);
+    socket.on("challenge_declined", onChallengeDeclined);
+    socket.on("challenge_cancelled", onChallengeCancelled);
+    socket.on("challenge_expired", onChallengeExpired);
     socket.on("waiting-for-opponent", onWaiting);
     socket.on("game-started", onGameStarted);
     socket.on("question", onQuestion);
@@ -170,6 +231,11 @@ export function useMultiplayerQuiz(
     socket.on("error", onError);
 
     return () => {
+      socket.off("presence_update", onPresenceUpdate);
+      socket.off("challenge_received", onChallengeReceived);
+      socket.off("challenge_declined", onChallengeDeclined);
+      socket.off("challenge_cancelled", onChallengeCancelled);
+      socket.off("challenge_expired", onChallengeExpired);
       socket.off("waiting-for-opponent", onWaiting);
       socket.off("game-started", onGameStarted);
       socket.off("question", onQuestion);
@@ -179,7 +245,86 @@ export function useMultiplayerQuiz(
       socket.off("player-disconnected", onPlayerDisconnected);
       socket.off("error", onError);
     };
-  }, [socket]);
+  }, [socket, myUserId]);
+
+  useEffect(() => {
+    if (!socket?.connected || phase !== "playing" || !roomId) return;
+    if (currentRound) return;
+
+    const timer = window.setTimeout(() => {
+      socket.emit("get-state", { roomId }, (res: unknown) => {
+        if (!res || typeof res !== "object") return;
+        if ("error" in res) return;
+        const r = res as Extract<GetStateAck, { roomId: string }>;
+        if (r.players?.length) setPlayers(r.players);
+        if (r.leaderboard?.length) setLeaderboard(r.leaderboard);
+        if (r.question) {
+          submitSentForRoundRef.current = null;
+          setCurrentRound({
+            questionIndex: r.questionIndex,
+            totalQuestions: r.totalQuestions,
+            question: r.question,
+          });
+          setAnswer("");
+          setHasSubmitted(false);
+          setLastReveal(null);
+          setDeadlineAt(Date.now() + r.question.timeLimit * 1000);
+        }
+      });
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [socket, phase, roomId, currentRound]);
+
+  const sendChallenge = useCallback(
+    (targetUserId: string) => {
+      if (!socket?.connected || !myUserId) {
+        setErrorMessage("Not connected or not signed in");
+        return;
+      }
+      setErrorMessage(null);
+      setPhase("waiting_challenge");
+      socket.emit(
+        "challenge_user",
+        {
+          targetUserId,
+          username: displayName.trim() || undefined,
+        },
+        (ack: { ok: boolean; challengeId?: string; error?: string }) => {
+          if (!ack.ok) {
+            setPhase("idle");
+            if (ack.error === "offline_or_self") {
+              setErrorMessage("That player is offline or unavailable.");
+            } else {
+              setErrorMessage("Could not send challenge.");
+            }
+          }
+        }
+      );
+    },
+    [socket, myUserId, displayName]
+  );
+
+  const respondChallenge = useCallback(
+    (challengeId: string, accept: boolean) => {
+      if (!socket?.connected) return;
+      socket.emit(
+        "challenge_response",
+        { challengeId, accept },
+        (ack: { ok: boolean; error?: string }) => {
+          setIncomingChallenge(null);
+          if (!ack.ok && accept) {
+            setErrorMessage("Could not start match.");
+            setPhase("idle");
+          }
+        }
+      );
+      if (!accept) {
+        setIncomingChallenge(null);
+      }
+    },
+    [socket]
+  );
 
   const findMatch = useCallback(
     (username: string) => {
@@ -188,15 +333,18 @@ export function useMultiplayerQuiz(
         return;
       }
       setErrorMessage(null);
-      setPhase("waiting");
+      setPhase("waiting_challenge");
       socket.emit(
         "join-game",
         { username: username.trim() || undefined },
         (ack: JoinGameAck) => {
           if (ack.status === "waiting") {
-            setPhase("waiting");
+            setPhase("waiting_challenge");
           } else if (ack.status === "game_started" && "roomId" in ack) {
             setRoomId(ack.roomId);
+            if ("players" in ack && ack.players?.length) {
+              setPlayers(ack.players);
+            }
             setPhase("playing");
           } else if (ack.status === "error") {
             setPhase("idle");
@@ -210,7 +358,7 @@ export function useMultiplayerQuiz(
 
   const findMatchSafe = useCallback(
     (username: string) => {
-      if (phase === "waiting") return;
+      if (phase === "waiting_challenge") return;
       findMatch(username);
     },
     [phase, findMatch]
@@ -246,6 +394,10 @@ export function useMultiplayerQuiz(
     hasSubmitted,
     lastReveal,
     mySocketId,
+    presenceUsers,
+    incomingChallenge,
+    sendChallenge,
+    respondChallenge,
     findMatch,
     findMatchSafe,
     submitAnswer,

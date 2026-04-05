@@ -15,6 +15,7 @@ export default function MultiplayerQuizPage() {
   const router = useRouter();
   const { token } = useSession();
   const { isLoading, isAuthenticated, user } = useAuthState();
+  const [displayName, setDisplayName] = useState("");
   const { socket, connected, error: socketConnectError } =
     useAuthenticatedGameSocket();
   const {
@@ -29,13 +30,18 @@ export default function MultiplayerQuizPage() {
     hasSubmitted,
     lastReveal,
     mySocketId,
-    findMatchSafe,
+    presenceUsers,
+    incomingChallenge,
+    sendChallenge,
+    respondChallenge,
     submitAnswer,
     resetToLobby,
     errorMessage,
-  } = useMultiplayerQuiz(socket, connected);
+  } = useMultiplayerQuiz(socket, connected, {
+    displayName,
+    myUserId: user?._id ?? null,
+  });
 
-  const [displayName, setDisplayName] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(0);
 
   useEffect(() => {
@@ -63,17 +69,22 @@ export default function MultiplayerQuizPage() {
     return () => clearInterval(id);
   }, [deadlineAt, phase, currentRound]);
 
+  /**
+   * Auto-submit when time is up. Must NOT fire on stale `secondsLeft === 0` from the
+   * previous round before the new `deadlineAt` is applied (that caused instant "Answer locked").
+   */
   useEffect(() => {
-    if (
-      phase !== "playing" ||
-      !currentRound ||
-      hasSubmitted ||
-      secondsLeft > 0
-    ) {
-      return;
-    }
+    if (phase !== "playing" || !currentRound || hasSubmitted) return;
+    if (!deadlineAt || Date.now() < deadlineAt) return;
     submitAnswer();
-  }, [secondsLeft, phase, currentRound, hasSubmitted, submitAnswer]);
+  }, [
+    secondsLeft,
+    phase,
+    currentRound,
+    hasSubmitted,
+    deadlineAt,
+    submitAnswer,
+  ]);
 
   const myScore = useMemo(() => {
     if (!mySocketId) return 0;
@@ -96,9 +107,12 @@ export default function MultiplayerQuizPage() {
     return socketQuestionToPublicQuestion(currentRound.question);
   }, [currentRound]);
 
-  const handleFindMatch = useCallback(() => {
-    findMatchSafe(displayName.trim() || "Player");
-  }, [findMatchSafe, displayName]);
+  const handleChallenge = useCallback(
+    (targetUserId: string) => {
+      sendChallenge(targetUserId);
+    },
+    [sendChallenge]
+  );
 
   if (isLoading || !isAuthenticated || user === undefined) {
     return (
@@ -134,9 +148,9 @@ export default function MultiplayerQuizPage() {
           1v1 live quiz
         </h1>
         <p className="mt-2 font-mono text-sm leading-relaxed text-cream/70">
-          Match with another player in the queue. Questions are drawn from the
-          same JSON packs as solo mode; the server picks a random run and keeps
-          both players in sync. Submit before the timer ends.
+          See who&apos;s online, pick someone, and send a challenge. They must
+          accept before the match starts. Each round uses a{" "}
+          <span className="text-neon">10 second</span> server timer.
         </p>
 
         {!connected && (
@@ -147,13 +161,34 @@ export default function MultiplayerQuizPage() {
           </p>
         )}
 
-        {connected && errorMessage && phase === "idle" && (
+        {connected && errorMessage && (phase === "idle" || phase === "waiting_challenge") && (
           <p className="mt-4 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-sm text-red-100">
             {errorMessage}
           </p>
         )}
 
-        {(phase === "idle" || phase === "waiting") && (
+        {phase === "playing" && !currentRound && (
+          <div className="liquid-glass mt-8 space-y-4 rounded-[24px] border border-neon/20 bg-neon/[0.06] p-8 text-center">
+            <p className="font-anton text-xl uppercase text-cream">
+              Teammate found
+            </p>
+            <p className="font-mono text-sm text-cream/70">
+              Syncing the first question… This usually takes a second.
+            </p>
+            {opponent && (
+              <p className="font-mono text-sm text-cream">
+                vs{" "}
+                <span className="text-neon">{opponent.username}</span>
+              </p>
+            )}
+            {roomId && (
+              <p className="font-mono text-[10px] text-cream/40">{roomId}</p>
+            )}
+            <div className="mx-auto mt-4 h-8 w-8 animate-spin rounded-full border-2 border-cream/20 border-t-neon" />
+          </div>
+        )}
+
+        {(phase === "idle" || phase === "waiting_challenge") && (
           <div className="liquid-glass mt-8 space-y-6 rounded-[24px] border border-white/10 p-6">
             <div>
               <label className="font-mono text-xs uppercase tracking-wider text-cream/50">
@@ -167,19 +202,87 @@ export default function MultiplayerQuizPage() {
                 className="mt-2 w-full rounded-[12px] border border-white/15 bg-white/5 px-4 py-3 font-mono text-sm text-cream placeholder:text-cream/35"
               />
             </div>
-            <button
-              type="button"
-              disabled={!connected}
-              onClick={handleFindMatch}
-              className="w-full rounded-[12px] bg-neon px-4 py-3 font-anton uppercase text-[#010828] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {phase === "waiting" ? "Finding opponent…" : "Find match"}
-            </button>
-            {phase === "waiting" && (
-              <p className="text-center font-mono text-sm text-cream/60">
-                Waiting for another player to join the queue…
+
+            <div>
+              <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
+                Online (tap to challenge)
+              </p>
+              {!user?._id && (
+                <p className="mt-2 font-mono text-sm text-amber-200/90">
+                  Sign in to see the player list and send challenges.
+                </p>
+              )}
+              {user?._id && presenceUsers.length === 0 && (
+                <p className="mt-3 font-mono text-sm text-cream/55">
+                  No one else online yet. Open another session (e.g. incognito
+                  with a second account) to test.
+                </p>
+              )}
+              {user?._id && presenceUsers.length > 0 && (
+                <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+                  {presenceUsers.map((u) => (
+                    <li
+                      key={u.userId}
+                      className="flex items-center justify-between gap-3 rounded-[12px] border border-white/10 bg-white/[0.04] px-4 py-3"
+                    >
+                      <span className="font-mono text-sm text-cream">
+                        {u.username}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={
+                          !connected || phase === "waiting_challenge"
+                        }
+                        onClick={() => handleChallenge(u.userId)}
+                        className="shrink-0 rounded-[10px] bg-neon px-4 py-2 font-mono text-xs font-semibold uppercase text-[#010828] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Challenge
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {phase === "waiting_challenge" && (
+              <p className="text-center font-mono text-sm text-cream/70">
+                Waiting for them to accept your challenge…
               </p>
             )}
+          </div>
+        )}
+
+        {incomingChallenge && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+            <div className="liquid-glass max-w-md rounded-[24px] border border-neon/30 p-8 shadow-2xl">
+              <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
+                Challenge
+              </p>
+              <p className="font-mono mt-2 text-lg text-cream">
+                <span className="text-neon">{incomingChallenge.fromUsername}</span>{" "}
+                wants to play a 1v1 quiz with you.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    respondChallenge(incomingChallenge.challengeId, true)
+                  }
+                  className="flex-1 rounded-[12px] bg-neon px-4 py-3 font-anton uppercase text-[#010828] hover:brightness-110"
+                >
+                  Accept
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    respondChallenge(incomingChallenge.challengeId, false)
+                  }
+                  className="flex-1 rounded-[12px] border border-white/20 bg-white/10 px-4 py-3 font-mono text-sm text-cream hover:bg-white/15"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -244,7 +347,7 @@ export default function MultiplayerQuizPage() {
                 onClick={submitAnswer}
                 className="mt-6 w-full rounded-[12px] border border-neon/50 bg-neon/15 px-4 py-3 font-anton uppercase text-neon hover:bg-neon/25 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {hasSubmitted ? "Answer locked" : "Submit answer"}
+                {hasSubmitted ? "Answer sent — wait for round" : "Submit answer"}
               </button>
             </div>
 

@@ -1,5 +1,16 @@
 /** Payloads from `apps/backend` Socket.IO quiz flow. */
 
+export type PresenceUser = {
+  userId: string;
+  username: string;
+};
+
+export type ChallengeReceivedPayload = {
+  challengeId: string;
+  fromUserId: string;
+  fromUsername: string;
+};
+
 export type MultiplayerPlayer = {
   socketId: string;
   username: string;
@@ -49,5 +60,22 @@ export type GameEndedPayload = {
 
 export type JoinGameAck =
   | { status: "waiting" }
-  | { status: "game_started"; roomId: string }
+  | {
+      status: "game_started";
+      roomId: string;
+      players: MultiplayerPlayer[];
+    }
   | { status: "error"; message?: string };
+
+/** Ack payload from `get-state` (server `socket.ts`). */
+export type GetStateAck =
+  | { error: string }
+  | {
+      roomId: string;
+      gameState: string;
+      questionIndex: number;
+      totalQuestions: number;
+      question: SocketQuestionWire | null;
+      leaderboard: LeaderboardEntry[];
+      players: MultiplayerPlayer[];
+    };

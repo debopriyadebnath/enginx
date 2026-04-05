@@ -60,6 +60,9 @@ export function scoreQuizAnswer(args: {
   return { correct, points };
 }
 
+/** Fixed countdown for live 1v1 (server + clients use this, not JSON `timeLimit`). */
+export const MULTIPLAYER_QUESTION_SECONDS = 10;
+
 /** Minimal payload for Socket.IO (no answer / explanation). */
 export function packQuestionToPayload(q: QuestionJson): {
   id: string;
@@ -74,5 +77,13 @@ export function packQuestionToPayload(q: QuestionJson): {
     text: q.question,
     options: q.options ?? [],
     timeLimit: q.timeLimit,
+  };
+}
+
+/** Same as `packQuestionToPayload` but always `timeLimit: MULTIPLAYER_QUESTION_SECONDS`. */
+export function packQuestionToPayloadMultiplayer(q: QuestionJson) {
+  return {
+    ...packQuestionToPayload(q),
+    timeLimit: MULTIPLAYER_QUESTION_SECONDS,
   };
 }

@@ -25,7 +25,10 @@ class GameManager {
         this.waitingQueue.unshift(otherPlayerId);
         return "";
       }
-      return this.createRoom([playerId, otherPlayerId]);
+      return this.createRoomFromPair(
+        [playerId, otherPlayerId],
+        [`Player ${this.rooms.size + 1}`, `Player ${this.rooms.size + 2}`]
+      );
     }
 
     this.waitingQueue.push(playerId);
@@ -33,30 +36,33 @@ class GameManager {
   }
 
   /**
-   * Create a new game room with two players and a shared random question run from `packages/*.json`.
+   * Create a new game room with two socket ids and display names (queue or challenge).
    */
-  private createRoom(playerIds: [string, string]): string {
+  createRoomFromPair(
+    socketIds: [string, string],
+    usernames: [string, string]
+  ): string {
     const roomId = `room-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const roundQuestions = pickRoundQuestions(ROUNDS_PER_MATCH, roomId);
 
     const players: Map<string, Player> = new Map([
       [
-        playerIds[0],
+        socketIds[0],
         {
-          socketId: playerIds[0],
-          userId: playerIds[0],
-          username: `Player ${this.rooms.size + 1}`,
+          socketId: socketIds[0],
+          userId: socketIds[0],
+          username: usernames[0].trim() || "Player",
           score: 0,
           currentAnswer: null,
           isReady: true,
         },
       ],
       [
-        playerIds[1],
+        socketIds[1],
         {
-          socketId: playerIds[1],
-          userId: playerIds[1],
-          username: `Player ${this.rooms.size + 2}`,
+          socketId: socketIds[1],
+          userId: socketIds[1],
+          username: usernames[1].trim() || "Player",
           score: 0,
           currentAnswer: null,
           isReady: true,

@@ -118,9 +118,17 @@ export function seededShuffle<T>(items: T[], seed: string): T[] {
 
 export type PackCategory = QuestionJson["category"];
 
+/** Convex / JSON pack categories — one file per subject under `packages/`. */
+const CATEGORY_ORDER: PackCategory[] = [
+  "math",
+  "aiml",
+  "cs_fundamentals",
+  "programming",
+];
+
 /**
- * Pick a random run of questions for one match: shuffle with room seed, then take `count`.
- * Optional `category` filters to one subject (same as solo quiz categories).
+ * Pick a match run: by default **round-robin** across categories so each JSON pack
+ * contributes randomly shuffled questions; optional `category` limits to one subject.
  */
 export function pickRoundQuestions(
   count: number,
@@ -128,16 +136,60 @@ export function pickRoundQuestions(
   category?: PackCategory
 ): QuestionJson[] {
   const pool = loadPackQuestions();
-  let filtered =
-    category !== undefined
-      ? pool.filter((q) => q.category === category)
-      : pool;
-
-  if (filtered.length === 0) {
-    filtered = pool;
+  if (pool.length === 0) {
+    return [];
   }
 
-  const n = Math.min(Math.max(count, 1), 50, filtered.length);
-  const shuffled = seededShuffle(filtered, roomSeed);
-  return shuffled.slice(0, n);
+  if (category !== undefined) {
+    let filtered = pool.filter((q) => q.category === category);
+    if (filtered.length === 0) filtered = pool;
+    const n = Math.min(Math.max(count, 1), 50, filtered.length);
+    return seededShuffle(filtered, roomSeed).slice(0, n);
+  }
+
+  const buckets = new Map<PackCategory, QuestionJson[]>();
+  for (const c of CATEGORY_ORDER) {
+    const qs = pool.filter((q) => q.category === c);
+    if (qs.length > 0) {
+      buckets.set(c, seededShuffle(qs, `${roomSeed}:${c}`));
+    }
+  }
+
+  if (buckets.size === 0) {
+    const n = Math.min(Math.max(count, 1), 50, pool.length);
+    return seededShuffle(pool, roomSeed).slice(0, n);
+  }
+
+  const categories = seededShuffle(
+    [...buckets.keys()],
+    `${roomSeed}:cat-order`
+  );
+  const result: QuestionJson[] = [];
+  let i = 0;
+
+  while (result.length < count) {
+    const available = categories.filter(
+      (c) => (buckets.get(c)?.length ?? 0) > 0
+    );
+    if (available.length === 0) break;
+    const c = available[i % available.length]!;
+    const bucket = buckets.get(c)!;
+    const q = bucket.shift()!;
+    result.push(q);
+    i++;
+  }
+
+  if (result.length < count) {
+    const used = new Set(result.map((q) => q.id));
+    const rest = seededShuffle(
+      pool.filter((q) => !used.has(q.id)),
+      `${roomSeed}:top-up`
+    );
+    for (const q of rest) {
+      if (result.length >= count) break;
+      result.push(q);
+    }
+  }
+
+  return result;
 }
