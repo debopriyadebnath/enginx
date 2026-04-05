@@ -98,3 +98,18 @@
     pointer-events: none;
   }
 }
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@utility reveal-mask {
+  mask-image: linear-gradient(to right, white var(--progress, 0%), transparent var(--progress, 0%));
+  -webkit-mask-image: linear-gradient(to right, white var(--progress, 0%), transparent var(--progress, 0%));
+}
+
+@utility neon-shadow {
+  filter: drop-shadow(0 0 8px #6fff00);
+}
