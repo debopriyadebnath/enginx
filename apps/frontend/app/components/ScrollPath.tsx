@@ -107,9 +107,7 @@ export const ScrollPath = () => {
           </filter>
 
           <filter id="plasma-noise" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" seed="1" result="noise">
-              <animate attributeName="seed" from="1" to="100" dur="10s" repeatCount="indefinite" />
-            </feTurbulence>
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="1" seed="1" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
           </filter>
 

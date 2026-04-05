@@ -40,7 +40,7 @@ export default function PlayLobbyPage() {
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-40"
         style={{
-          backgroundImage: "url(/texture.png)",
+          backgroundColor: '#010828',
           backgroundSize: "cover",
           mixBlendMode: "lighten",
         }}
