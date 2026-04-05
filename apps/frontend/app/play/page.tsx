@@ -15,7 +15,7 @@ export default function PlayLobbyPage() {
   const router = useRouter();
   const { token } = useSession();
   const { isLoading, isAuthenticated } = useAuthState();
-  const [category, setCategory] = useState<QuizCategoryId>("math");
+  const [category, setCategory] = useState<QuizCategoryId>("all");
   const [count, setCount] = useState(5);
   const [useTimer, setUseTimer] = useState(false);
 
