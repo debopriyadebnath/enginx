@@ -148,7 +148,7 @@ export const ScrollPath = () => {
             transition={{ 
               duration: 2, 
               repeat: Infinity, 
-              ease: "easeInOut" 
+              ease: "easeInOut" as const 
             }}
           />
 
@@ -177,7 +177,7 @@ export const ScrollPath = () => {
             transition={{ 
               duration: 3 + idx, 
               repeat: Infinity, 
-              ease: "linear" 
+              ease: "linear" as const 
             }}
           />
         ))}

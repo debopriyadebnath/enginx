@@ -11,8 +11,12 @@
     "convex:push": "convex dev --once"
   },
   "dependencies": {
+    "@base-ui/react": "^1.3.0",
     "@elevenlabs/elevenlabs-js": "^2.41.1",
     "@elevenlabs/react": "^1.0.2",
+    "@hugeicons/core-free-icons": "^4.1.1",
+    "@hugeicons/react": "^1.1.6",
+    "@xyflow/react": "^12.10.2",
     "convex": "^1.34.1",
     "dotenv": "^17.4.0",
     "framer-motion": "^12.38.0",

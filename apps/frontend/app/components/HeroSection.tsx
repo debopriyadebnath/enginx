@@ -42,7 +42,7 @@ const HeroSection = () => {
         <motion.div 
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: "easeOut" as const }}
           className="hidden lg:flex flex-col justify-between py-8 mr-8"
         >
           {/* Logo */}

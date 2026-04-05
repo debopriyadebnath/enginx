@@ -113,3 +113,58 @@
 @utility neon-shadow {
   filter: drop-shadow(0 0 8px #6fff00);
 }
+
+/* ─── React Flow dark-theme overrides ─── */
+.react-flow__pane {
+  cursor: default;
+}
+.react-flow__selection {
+  background: rgba(111, 255, 0, 0.05) !important;
+  border: 1.5px solid rgba(111, 255, 0, 0.45) !important;
+}
+.react-flow__nodesselection-rect {
+  background: rgba(111, 255, 0, 0.05) !important;
+  border: 1.5px solid rgba(111, 255, 0, 0.45) !important;
+}
+.react-flow__node.selected > div {
+  border-color: #6fff00 !important;
+  box-shadow: 0 0 0 2px rgba(111, 255, 0, 0.22), 0 8px 30px rgba(0,0,0,0.35) !important;
+}
+.react-flow__handle {
+  cursor: crosshair !important;
+}
+/* Make handles show a cross cursor and scale on hover */
+.react-flow__handle:hover,
+.react-flow__handle:active {
+  transform: scale(1.4) !important;
+  background-color: #6fff00 !important;
+  border-color: #6fff00 !important;
+}
+.react-flow__connection-line {
+  stroke: rgba(111, 255, 0, 0.8) !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 5 3;
+}
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+.react-flow__controls {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+.react-flow__controls button {
+  background: #0a1228 !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #e8eeff !important;
+  fill: #e8eeff !important;
+}
+.react-flow__controls button:hover {
+  background: #111c3a !important;
+}
+.react-flow__minimap {
+  background: #050c1c !important;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+}
+.react-flow__background {
+  background-color: transparent;
+}

@@ -11,7 +11,7 @@ import {
   cellKey,
   isTargetCell,
   listEligiblePuzzles,
-  pickRandomPuzzle,
+  pickRandomPuzzleNoRepeat,
 } from "@/lib/mindSnapPack";
 import { useSession } from "@/lib/session";
 
@@ -61,6 +61,7 @@ function MindSnapInner() {
   );
 
   const [puzzle, setPuzzle] = useState<MindSnapPuzzle | null>(null);
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [phase, setPhase] = useState<Phase>("menu");
   const [flashLeft, setFlashLeft] = useState(0);
   const [recallLeft, setRecallLeft] = useState(0);
@@ -82,6 +83,11 @@ function MindSnapInner() {
       router.replace("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Reset seen-puzzle pool when filters change so new dept/difficulty starts fresh
+  useEffect(() => {
+    setSeenIds(new Set());
+  }, [filters]);
 
   const finishRound = useCallback(
     (p: MindSnapPuzzle, found: Set<string>, wrong: Set<string>) => {
@@ -115,17 +121,19 @@ function MindSnapInner() {
   );
 
   const startRound = useCallback(() => {
-    const p = pickRandomPuzzle(filters);
-    if (!p) return;
+    const result = pickRandomPuzzleNoRepeat(filters, seenIds);
+    if (!result) return;
+    const { puzzle: p, nextSeenIds } = result;
     finishedRef.current = false;
     setPuzzle(p);
+    setSeenIds(nextSeenIds);
     setCorrectFound(new Set());
     setWrongTapped(new Set());
     setStats(null);
     setPhase("flash");
     setFlashLeft(p.displayTime);
     setRecallLeft(p.recallTime);
-  }, [filters]);
+  }, [filters, seenIds]);
 
   /** Flash countdown */
   useEffect(() => {

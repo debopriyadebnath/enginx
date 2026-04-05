@@ -44,7 +44,7 @@ const CTASection = () => {
           <motion.span 
             initial={{ scale: 0.8, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 1, ease: "easeOut" as const }}
             className="absolute -top-6 sm:-top-8 lg:-top-12 left-0 font-condiment text-[17px] sm:text-[32px] md:text-[48px] lg:text-[68px] text-neon mix-blend-exclusion"
           >
             Go beyond

@@ -133,7 +133,7 @@ const AboutSection = () => {
             initial={{ opacity: 0, x: -100 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.8, ease: "easeOut" as const }}
             className="font-grotesk text-[32px] sm:text-[48px] lg:text-[60px] uppercase text-cream leading-[1.1]"
           >
             Collection of

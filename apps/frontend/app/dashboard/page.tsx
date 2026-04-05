@@ -14,11 +14,11 @@ import {
   Calculator, Code2, BarChart2, Grid3x3,
   Bot, Eye, Shield, TrendingUp,
   Zap, Search, Activity, Cpu,
-  Bug, Layers, Swords, ChevronRight,
+  Bug, Layers, Swords, ChevronRight, Network,
   CheckCircle, QrCode, Gamepad2, ClipboardList,
   Trophy, Radio, Users, Plus, Mic
 } from 'lucide-react';
-import { motion, useScroll, useTransform } from "framer-motion";
+import { type Variants, motion, useScroll, useTransform } from "framer-motion";
 
 const NAV_ITEMS: {
   icon: typeof Gamepad2;
@@ -71,6 +71,13 @@ const GAMES: Record<Category, { cursive: string; cards: GameCard[] }> = {
   'CS FUNDAMENTALS': {
     cursive: 'Code & logic',
     cards: [
+      {
+        title: 'WORKFLOW GRAPH',
+        desc: 'React Flow graph puzzles — arrange nodes & connect edges (workflow.json). Timer · solo.',
+        icon: Network,
+        mode: 'SOLO',
+        href: '/play/workflow',
+      },
       {
         title: 'BUG FINDER',
         desc: 'C snippets from codes.json — pick the missing token in the terminal.',
@@ -133,11 +140,12 @@ const containerVariants = {
   },
 };
 
-const sectionVariants = {
+const sectionVariants: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.8, ease: "easeOut" }
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: "easeOut" as const },
   },
 };
 
@@ -356,7 +364,7 @@ const Home = () => {
                 <span className="font-grotesk text-[11px] text-cream/50 uppercase tracking-widest">Daily Challenge</span>
                 <span className="font-mono text-neon text-sm">⏱ 07:49</span>
               </div>
-              <div className="flex gap-4 mb-8">
+              <div className="mb-8 flex flex-wrap gap-4">
                 <button
                   type="button"
                   onClick={() =>
@@ -365,7 +373,7 @@ const Home = () => {
                       block: "start",
                     })
                   }
-                  className="liquid-glass relative [--glass-border-start:rgba(111,255,0,0.5)] [--glass-bg:rgba(111,255,0,0.04)] [--glass-bg-accent:rgba(111,255,0,0.08)] rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] cursor-pointer text-left group"
+                  className="liquid-glass relative [--glass-border-start:rgba(111,255,0,0.5)] [--glass-bg:rgba(111,255,0,0.04)] [--glass-bg-accent:rgba(111,255,0,0.08)] rounded-[20px] px-6 py-5 flex-1 min-w-[140px] flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] cursor-pointer text-left group"
                 >
                   <span className="font-grotesk text-[28px] text-neon group-hover:drop-shadow-[0_0_8px_rgba(111,255,0,0.5)] transition-all">QUIZ</span>
                   <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
@@ -378,11 +386,20 @@ const Home = () => {
                       block: "start",
                     })
                   }
-                  className="liquid-glass relative [--glass-border-start:rgba(245,158,11,0.5)] [--glass-bg:rgba(245,158,11,0.04)] [--glass-bg-accent:rgba(245,158,11,0.08)] rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] cursor-pointer text-left group"
+                  className="liquid-glass relative [--glass-border-start:rgba(245,158,11,0.5)] [--glass-bg:rgba(245,158,11,0.04)] [--glass-bg-accent:rgba(245,158,11,0.08)] rounded-[20px] px-6 py-5 flex-1 min-w-[140px] flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] cursor-pointer text-left group"
                 >
                   <span className="font-grotesk text-[28px] text-amber-300 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all">BUG</span>
                   <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
                 </button>
+                <Link
+                  href="/play/workflow"
+                  className="liquid-glass relative [--glass-border-start:rgba(56,189,248,0.5)] [--glass-bg:rgba(56,189,248,0.06)] [--glass-bg-accent:rgba(56,189,248,0.12)] rounded-[20px] px-6 py-5 flex-1 min-w-[140px] flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] text-left group"
+                >
+                  <span className="font-grotesk text-[28px] text-sky-300 group-hover:drop-shadow-[0_0_8px_rgba(56,189,248,0.45)] transition-all">
+                    GRAPH
+                  </span>
+                  <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
+                </Link>
               </div>
             </motion.div>
 
@@ -477,7 +494,9 @@ const Home = () => {
                                 }
                               }}
                               className={`liquid-glass rounded-[24px] p-5 flex flex-col gap-3 hover:bg-white/10 hover:scale-[1.02] transition-all group ${
-                                game.scrollTo ? "cursor-pointer" : ""
+                                game.scrollTo || game.href
+                                  ? "cursor-pointer"
+                                  : ""
                               }`}
                             >
                               <div className={`rounded-[14px] w-12 h-12 flex items-center justify-center transition-transform group-hover:rotate-6 ${styles.bg}`}>

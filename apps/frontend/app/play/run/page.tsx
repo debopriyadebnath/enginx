@@ -27,6 +27,7 @@ import {
 import { useSession } from "@/lib/session";
 
 const CATEGORIES = [
+  "all",
   "math",
   "aiml",
   "cs_fundamentals",
@@ -57,8 +58,8 @@ function PlayRunInner() {
   const { isLoading, isAuthenticated, user } = useAuthState();
   const applyPoints = useMutation(api.quizGame.applyLocalQuizPoints);
 
-  const rawCat = searchParams.get("category") ?? "math";
-  const category = isCategory(rawCat) ? rawCat : "math";
+  const rawCat = searchParams.get("category") ?? "all";
+  const category = isCategory(rawCat) ? rawCat : "all";
   const count = Math.min(
     25,
     Math.max(1, Number(searchParams.get("count") ?? 5) || 5)

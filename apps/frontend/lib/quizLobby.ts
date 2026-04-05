@@ -1,6 +1,7 @@
 /** Shared quiz lobby → `/play/run` URL (dashboard + /play). */
 
 export const QUIZ_CATEGORY_OPTIONS = [
+  { id: "all" as const, label: "All categories (random mix)" },
   { id: "math" as const, label: "Math" },
   { id: "aiml" as const, label: "AI / ML" },
   { id: "cs_fundamentals" as const, label: "CS Fundamentals" },

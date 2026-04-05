@@ -15,7 +15,7 @@ export default function PlayLobbyPage() {
   const router = useRouter();
   const { token } = useSession();
   const { isLoading, isAuthenticated } = useAuthState();
-  const [category, setCategory] = useState<QuizCategoryId>("math");
+  const [category, setCategory] = useState<QuizCategoryId>("all");
   const [count, setCount] = useState(5);
   const [useTimer, setUseTimer] = useState(false);
 
@@ -60,6 +60,24 @@ export default function PlayLobbyPage() {
           on the game server—queue for a quick match with another signed-in
           player.
         </p>
+
+        <Link
+          href="/play/workflow"
+          className="liquid-glass group mt-6 block rounded-[20px] border border-white/12 bg-white/[0.03] p-5 transition hover:border-neon/35"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-widest text-neon/75">
+            Graph lab
+          </p>
+          <h2 className="font-grotesk mt-2 text-lg text-cream group-hover:text-neon">
+            Workflow graph puzzles
+          </h2>
+          <p className="mt-2 font-mono text-xs leading-relaxed text-cream/60">
+            React Flow · arrange & connect · timer · AIML, CS, electronics & more
+          </p>
+          <span className="mt-3 inline-block font-mono text-xs text-neon/90">
+            Open →
+          </span>
+        </Link>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="liquid-glass rounded-[20px] border border-white/10 p-5">

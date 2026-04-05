@@ -46,6 +46,27 @@ export function pickRandomPuzzle(filters: MindSnapFilters): MindSnapPuzzle | nul
   return pool[i] ?? null;
 }
 
+/**
+ * Pick a random puzzle that hasn't appeared in `seenIds` yet.
+ * When all puzzles have been seen, the pool resets automatically.
+ * Returns the chosen puzzle AND the updated seenIds set.
+ */
+export function pickRandomPuzzleNoRepeat(
+  filters: MindSnapFilters,
+  seenIds: Set<string>
+): { puzzle: MindSnapPuzzle; nextSeenIds: Set<string> } | null {
+  const pool = listEligiblePuzzles(filters);
+  if (pool.length === 0) return null;
+
+  // Unseen first; if pool exhausted, reset and use full pool
+  let candidates = pool.filter((p) => !seenIds.has(p.id));
+  if (candidates.length === 0) candidates = pool;
+
+  const picked = candidates[Math.floor(Math.random() * candidates.length)]!;
+  const nextSeenIds = new Set(candidates === pool ? [picked.id] : [...seenIds, picked.id]);
+  return { puzzle: picked, nextSeenIds };
+}
+
 export function cellKey(row: number, col: number): string {
   return `${row},${col}`;
 }
