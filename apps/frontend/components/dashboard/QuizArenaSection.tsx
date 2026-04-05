@@ -10,6 +10,7 @@ import {
   buildPlayRunQuery,
 } from "@/lib/quizLobby";
 import { MascotCountdown } from "./MascotCountdown";
+import { motion } from "framer-motion";
 
 export function QuizArenaSection() {
   const router = useRouter();
@@ -28,7 +29,14 @@ export function QuizArenaSection() {
   }
 
   return (
-    <section id="quiz-arena" className="mb-10 scroll-mt-8">
+    <motion.section 
+      id="quiz-arena" 
+      className="mb-10 scroll-mt-8"
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+    >
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ClipboardList className="text-neon" size={18} />
@@ -41,17 +49,24 @@ export function QuizArenaSection() {
         </span>
       </div>
 
-      <div className="liquid-glass relative [--glass-border-start:rgba(111,255,0,0.5)] [--glass-border-mid:rgba(111,255,0,0.15)] [--glass-bg:rgba(108, 212, 28, 0.04)] [--glass-bg-accent:rgba(130, 239, 47, 0.08)] overflow-hidden rounded-[24px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-8">
+      <motion.div 
+        whileHover={{ scale: 1.005 }}
+        className="liquid-glass group relative [--glass-border-start:rgba(111,255,0,0.6)] [--glass-border-mid:rgba(111,255,0,0.15)] [--glass-bg:rgba(111,255,0,0.05)] [--glass-bg-accent:rgba(111,255,0,0.1)] overflow-hidden rounded-[24px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-all duration-300 hover:shadow-[0_20px_80px_rgba(111,255,0,0.1)] hover:[--glass-bg:rgba(111,255,0,0.08)] hover:[--glass-border-start:rgba(111,255,0,0.8)] md:p-8"
+      >
         <div
-          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#6FFF00]/10 blur-3xl"
+          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#6FFF00]/10 blur-3xl transition-opacity group-hover:opacity-100"
           aria-hidden
         />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_minmax(0,340px)] lg:items-center">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
             <div className="flex items-center gap-2">
               <Sparkles className="text-neon" size={22} />
               <h2 className="font-grotesk text-2xl uppercase tracking-wide text-cream sm:text-3xl">
-                Engineering quiz
+                Engineering <span className="text-neon">quiz</span>
               </h2>
             </div>
             <p className="mt-3 max-w-xl font-mono text-sm leading-relaxed text-cream/70">
@@ -60,12 +75,23 @@ export function QuizArenaSection() {
               explanations unlock when you finish the run.
             </p>
             <ul className="mt-4 space-y-1.5 font-mono text-xs text-cream/55">
-              <li>· Points and streaks sync to your profile</li>
-              <li>· Leaderboard updates on the right →</li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 bg-neon rounded-full" />
+                Points and streaks sync to your profile
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1 h-1 bg-neon rounded-full" />
+                Leaderboard updates on the right →
+              </li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div className="liquid-glass rounded-[20px] border border-white/10 p-5">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="liquid-glass rounded-[20px] border border-white/10 p-5 backdrop-blur-sm"
+          >
             <label className="font-mono text-[10px] uppercase tracking-wider text-cream/50">
               Category
             </label>
@@ -74,7 +100,7 @@ export function QuizArenaSection() {
               onChange={(e) =>
                 setCategory(e.target.value as QuizCategoryId)
               }
-              className="mt-2 w-full rounded-[12px] border border-white/15 bg-[#010828]/60 px-4 py-3 font-mono text-sm text-cream focus:border-[#6FFF00]/50 focus:outline-none"
+              className="mt-2 w-full rounded-[12px] border border-white/15 bg-[#010828]/60 px-4 py-3 font-mono text-sm text-cream focus:border-[#6FFF00]/50 focus:outline-none transition-all hover:bg-[#010828]/80 cursor-pointer"
             >
               {QUIZ_CATEGORY_OPTIONS.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -92,10 +118,10 @@ export function QuizArenaSection() {
               max={25}
               value={count}
               onChange={(e) => setCount(Number(e.target.value))}
-              className="mt-2 w-full rounded-[12px] border border-white/15 bg-[#010828]/60 px-4 py-3 font-mono text-sm text-cream tabular-nums focus:border-[#6FFF00]/50 focus:outline-none"
+              className="mt-2 w-full rounded-[12px] border border-white/15 bg-[#010828]/60 px-4 py-3 font-mono text-sm text-cream tabular-nums focus:border-[#6FFF00]/50 focus:outline-none transition-all hover:bg-[#010828]/80"
             />
 
-            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[12px] border border-white/10 bg-white/[0.04] px-3 py-3">
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[12px] border border-white/10 bg-white/[0.04] px-3 py-3 hover:bg-white/[0.08] transition-colors">
               <input
                 type="checkbox"
                 checked={useTimer}
@@ -115,23 +141,25 @@ export function QuizArenaSection() {
               </span>
             </label>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => start()}
-              className="mt-5 w-full rounded-[14px] bg-[#6FFF00] py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.2)] transition hover:brightness-110"
+              className="mt-5 w-full rounded-[14px] bg-[#6FFF00] py-3.5 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.2)] transition-all hover:brightness-110 font-bold"
             >
               Start run
-            </button>
+            </motion.button>
             <Link
               href="/play/multi"
-              className="mt-3 block text-center font-mono text-xs text-neon/90 underline-offset-4 hover:underline"
+              className="mt-3 block text-center font-mono text-xs text-neon/90 underline-offset-4 hover:underline transition-all hover:text-neon"
             >
               Or play 1v1 multiplayer →
             </Link>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
       {showCountdown && <MascotCountdown onComplete={handleCountdownComplete} />}
-    </section>
+    </motion.section>
   );
 }

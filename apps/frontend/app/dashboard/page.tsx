@@ -18,6 +18,7 @@ import {
   CheckCircle, QrCode, Gamepad2, ClipboardList,
   Trophy, Radio, Users, Plus, Mic
 } from 'lucide-react';
+import { motion, useScroll, useTransform } from "framer-motion";
 
 const NAV_ITEMS: {
   icon: typeof Gamepad2;
@@ -121,6 +122,25 @@ const QUESTS = [
   { name: "Mind Snap Duel", progress: 1, total: 1 },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.3,
+    },
+  },
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1, y: 0,
+    transition: { duration: 0.8, ease: "easeOut" }
+  },
+};
+
 const Home = () => {
   const router = useRouter();
   const { token } = useSession();
@@ -130,6 +150,12 @@ const Home = () => {
   const { connected: socketConnected, error: socketError } =
     useAuthenticatedGameSocket();
   const [activeTab, setActiveTab] = useState<Category>("MATH");
+
+  // Scroll Parallax logic
+  const { scrollY } = useScroll();
+  const bgY = useTransform(scrollY, [0, 1000], [0, 250]);
+  const orbY = useTransform(scrollY, [0, 1000], [0, -150]);
+  const orbX = useTransform(scrollY, [0, 1000], [0, 100]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -159,16 +185,28 @@ const Home = () => {
   const score = user.score ?? 0;
 
   return (
-    <div className="relative flex h-[100dvh] min-h-0 flex-col bg-[#010828]">
-      {/* Background video */}
-      <video autoPlay loop muted playsInline className="fixed inset-0 w-full h-full object-cover z-0 opacity-15">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4" type="video/mp4" />
-      </video>
+    <div className="relative flex h-[100dvh] min-h-0 flex-col bg-[#010828] overflow-hidden">
+      {/* Parallax background video */}
+      <motion.div style={{ y: bgY }} className="fixed inset-0 z-0">
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-15">
+          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4" type="video/mp4" />
+        </video>
+      </motion.div>
+
+      {/* Floating Parallax Orbs */}
+      <motion.div 
+        style={{ y: orbY, x: orbX }}
+        className="fixed top-1/4 -left-20 w-96 h-96 bg-neon/10 rounded-full blur-[120px] pointer-events-none z-0" 
+      />
+      <motion.div 
+        style={{ y: orbX, x: orbY }}
+        className="fixed bottom-1/4 -right-20 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[140px] pointer-events-none z-0" 
+      />
 
       {/* Texture overlay */}
       <div
         className="fixed inset-0 z-50 pointer-events-none"
-        style={{ backgroundImage: 'url(/texture.png)', backgroundSize: 'cover', mixBlendMode: 'lighten', opacity: 0.6 }}
+        style={{ backgroundSize: 'cover', mixBlendMode: 'lighten', opacity: 0.6 }}
       />
 
       {/* TOP BAR */}
@@ -223,31 +261,46 @@ const Home = () => {
       </header>
 
       {/* BODY — min-h-0 lets flex children shrink so main can scroll */}
-      <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-row overflow-hidden relative z-10">
         {/* LEFT SIDEBAR */}
         <aside className="hidden min-h-0 shrink-0 flex-col gap-2 overflow-y-auto border-r border-white/10 px-4 py-8 liquid-glass lg:flex lg:w-[240px]">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.map((item, idx) => {
             const Icon = item.icon;
             const goQuiz = () =>
               document.getElementById("quiz-arena")?.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
               });
+            const content = (
+              <>
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </>
+            );
+            
             if (item.href) {
               return (
-                <Link
+                <motion.div
                   key={item.label}
-                  href={item.href}
-                  className="flex w-full items-center gap-3 rounded-[16px] px-4 py-3 font-mono text-sm text-cream/70 transition hover:bg-white/10 hover:text-cream"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * idx }}
                 >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </Link>
+                  <Link
+                    href={item.href}
+                    className="flex w-full items-center gap-3 rounded-[16px] px-4 py-3 font-mono text-sm text-cream/70 transition hover:bg-white/10 hover:text-cream"
+                  >
+                    {content}
+                  </Link>
+                </motion.div>
               );
             }
             return (
-              <button
+              <motion.button
                 key={item.label}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 * idx }}
                 type="button"
                 onClick={() => {
                   if (item.scrollToQuiz) goQuiz();
@@ -258,13 +311,17 @@ const Home = () => {
                     : "cursor-default text-cream/70 hover:bg-white/10 hover:text-cream"
                 }`}
               >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </button>
+                {content}
+              </motion.button>
             );
           })}
 
-          <div className="mt-auto flex items-center gap-3 px-4 pt-6">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            transition={{ delay: 1 }}
+            className="mt-auto flex items-center gap-3 px-4 pt-6"
+          >
             <div className="w-9 h-9 bg-white/10 liquid-glass rounded-full overflow-hidden flex items-center justify-center shrink-0">
               {user.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -282,159 +339,184 @@ const Home = () => {
             <span className="font-grotesk text-[13px] text-cream uppercase truncate max-w-[140px]">
               {displayName}
             </span>
-          </div>
+          </motion.div>
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 pb-24 lg:pb-8">
-          <div className="max-w-[1400px]">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 pb-24 lg:pb-8 scroll-smooth">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="max-w-[1400px]"
+          >
             {/* DAILY CHALLENGE */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-grotesk text-[11px] text-cream/50 uppercase tracking-widest">Daily Challenge</span>
-              <span className="font-mono text-neon text-sm">⏱ 07:49</span>
-            </div>
-            <div className="flex gap-4 mb-8">
-              <button
-                type="button"
-                onClick={() =>
-                  document.getElementById("quiz-arena")?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  })
-                }
-                className="liquid-glass rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition cursor-pointer text-left"
-              >
-                <span className="font-grotesk text-[28px] text-neon">QUIZ</span>
-                <ChevronRight className="text-cream/50" size={24} />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  document.getElementById("bug-finder")?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  })
-                }
-                className="liquid-glass rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition cursor-pointer text-left"
-              >
-                <span className="font-grotesk text-[28px] text-amber-300">BUG</span>
-                <ChevronRight className="text-cream/50" size={24} />
-              </button>
-            </div>
+            <motion.div variants={sectionVariants}>
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-grotesk text-[11px] text-cream/50 uppercase tracking-widest">Daily Challenge</span>
+                <span className="font-mono text-neon text-sm">⏱ 07:49</span>
+              </div>
+              <div className="flex gap-4 mb-8">
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.getElementById("quiz-arena")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }
+                  className="liquid-glass relative [--glass-border-start:rgba(111,255,0,0.5)] [--glass-bg:rgba(111,255,0,0.04)] [--glass-bg-accent:rgba(111,255,0,0.08)] rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] cursor-pointer text-left group"
+                >
+                  <span className="font-grotesk text-[28px] text-neon group-hover:drop-shadow-[0_0_8px_rgba(111,255,0,0.5)] transition-all">QUIZ</span>
+                  <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.getElementById("bug-finder")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }
+                  className="liquid-glass relative [--glass-border-start:rgba(245,158,11,0.5)] [--glass-bg:rgba(245,158,11,0.04)] [--glass-bg-accent:rgba(245,158,11,0.08)] rounded-[20px] px-6 py-5 flex-1 flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] cursor-pointer text-left group"
+                >
+                  <span className="font-grotesk text-[28px] text-amber-300 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all">BUG</span>
+                  <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
+                </button>
+              </div>
+            </motion.div>
 
-            <QuizArenaSection />
+            <motion.div variants={sectionVariants} viewport={{ once: true, margin: "-100px" }}>
+              <QuizArenaSection />
+            </motion.div>
 
-            <BugFinderSection />
-            <MindSnapSection />
+            <motion.div variants={sectionVariants} viewport={{ once: true, margin: "-100px" }}>
+              <BugFinderSection />
+            </motion.div>
+
+            <motion.div variants={sectionVariants} viewport={{ once: true, margin: "-100px" }}>
+              <MindSnapSection />
+            </motion.div>
 
             {/* GAME CATEGORIES */}
-            <span className="font-grotesk text-[11px] text-cream/50 uppercase tracking-widest">Game Categories</span>
+            <motion.div variants={sectionVariants}>
+              <span className="font-grotesk text-[11px] text-cream/50 uppercase tracking-widest">Game Categories</span>
 
-            {/* Tabs */}
-            <div className="flex gap-3 my-4 overflow-x-auto">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveTab(cat)}
-                  className={`font-grotesk uppercase rounded-full px-5 py-2 text-sm whitespace-nowrap transition ${
-                    activeTab === cat
-                      ? 'bg-neon text-[#010828]'
-                      : 'liquid-glass text-cream/60 hover:bg-white/10'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+              {/* Tabs */}
+              <div className="flex gap-3 my-4 overflow-x-auto pb-2 no-scrollbar">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveTab(cat)}
+                    className={`font-grotesk uppercase rounded-full px-5 py-2 text-sm whitespace-nowrap transition-all duration-300 ${
+                      activeTab === cat
+                        ? 'bg-neon text-[#010828] shadow-[0_0_20px_rgba(111,255,0,0.3)] scale-105'
+                        : 'liquid-glass text-cream/60 hover:bg-white/10'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
 
-            {/* All category sections */}
-            {CATEGORIES.map((cat) => {
-              const { cursive, cards } = GAMES[cat];
-              const styles = ICON_STYLES[cat];
-              return (
-                <div key={cat} className="mb-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-grotesk text-[20px] text-cream uppercase">{cat}</span>
-                      <span className="font-condiment text-neon text-[18px]">{cursive}</span>
-                    </div>
-                    <span className="font-mono text-neon/70 text-xs hover:text-neon cursor-pointer">SEE ALL →</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {cards.map((game) => {
-                      const GameIcon = game.icon;
-                      return (
-                        <div
-                          key={game.title}
-                          role={game.scrollTo || game.href ? "button" : undefined}
-                          tabIndex={game.scrollTo || game.href ? 0 : undefined}
-                          onClick={() => {
-                            if (game.href) {
-                              router.push(game.href);
-                              return;
-                            }
-                            if (game.scrollTo === "bug-finder") {
-                              document.getElementById("bug-finder")?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (
-                              game.scrollTo === "bug-finder" &&
-                              (e.key === "Enter" || e.key === " ")
-                            ) {
-                              e.preventDefault();
-                              document.getElementById("bug-finder")?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                            }
-                            if (
-                              game.href &&
-                              (e.key === "Enter" || e.key === " ")
-                            ) {
-                              e.preventDefault();
-                              router.push(game.href);
-                            }
-                          }}
-                          className={`liquid-glass rounded-[24px] p-5 flex flex-col gap-3 hover:bg-white/10 hover:scale-[1.02] transition-all group ${
-                            game.scrollTo || game.href ? "cursor-pointer" : ""
-                          }`}
-                        >
-                          <div className={`rounded-[14px] w-12 h-12 flex items-center justify-center ${styles.bg}`}>
-                            <GameIcon size={22} className={styles.text} />
-                          </div>
-                          <span className="font-grotesk text-[15px] text-cream uppercase mt-1">{game.title}</span>
-                          <span className="font-mono text-cream/50 text-xs leading-relaxed line-clamp-2">{game.desc}</span>
-                          <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono ${
-                              game.mode === 'SOLO'
-                                ? 'bg-[#6FFF00]/10 text-neon'
-                                : 'bg-purple-500/20 text-purple-400'
-                            }`}>
-                              {game.mode}
-                            </span>
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#b724ff] to-[#7c3aed] rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 hover:scale-110 transition">
-                              <ChevronRight size={14} className="text-white" />
-                            </div>
-                          </div>
+              {/* All category sections */}
+              <div className="relative">
+                {CATEGORIES.map((cat) => {
+                  if (activeTab !== cat) return null;
+                  const { cursive, cards } = GAMES[cat];
+                  const styles = ICON_STYLES[cat];
+                  return (
+                    <motion.div 
+                      key={cat} 
+                      className="mb-10"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-baseline gap-3">
+                          <span className="font-grotesk text-[20px] text-cream uppercase">{cat}</span>
+                          <span className="font-condiment text-neon text-[18px]">{cursive}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                        <span className="font-mono text-neon/70 text-xs hover:text-neon cursor-pointer transition-colors">SEE ALL →</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {cards.map((game, idx) => {
+                          const GameIcon = game.icon;
+                          return (
+                            <motion.div
+                              key={game.title}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: idx * 0.05 }}
+                              role={(game.scrollTo || game.href) ? "button" : undefined}
+                              tabIndex={(game.scrollTo || game.href) ? 0 : undefined}
+                              onClick={() => {
+                                if (game.scrollTo === "bug-finder") {
+                                  document.getElementById("bug-finder")?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                } else if (game.href) {
+                                  router.push(game.href);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  if (game.scrollTo === "bug-finder") {
+                                    document.getElementById("bug-finder")?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  } else if (game.href) {
+                                    router.push(game.href);
+                                  }
+                                }
+                              }}
+                              className={`liquid-glass rounded-[24px] p-5 flex flex-col gap-3 hover:bg-white/10 hover:scale-[1.02] transition-all group ${
+                                game.scrollTo ? "cursor-pointer" : ""
+                              }`}
+                            >
+                              <div className={`rounded-[14px] w-12 h-12 flex items-center justify-center transition-transform group-hover:rotate-6 ${styles.bg}`}>
+                                <GameIcon size={22} className={styles.text} />
+                              </div>
+                              <span className="font-grotesk text-[15px] text-cream uppercase mt-1 group-hover:text-neon transition-colors">{game.title}</span>
+                              <span className="font-mono text-cream/50 text-xs leading-relaxed line-clamp-2">{game.desc}</span>
+                              <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono ${
+                                  game.mode === 'SOLO'
+                                    ? 'bg-[#6FFF00]/10 text-neon'
+                                    : 'bg-purple-500/20 text-purple-400'
+                                }`}>
+                                  {game.mode}
+                                </span>
+                                <div className="w-8 h-8 bg-gradient-to-br from-[#b724ff] to-[#7c3aed] rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 hover:scale-110 transition group-hover:shadow-purple-500/50">
+                                  <ChevronRight size={14} className="text-white" />
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
         </main>
 
         {/* RIGHT SIDEBAR */}
         <aside className="hidden min-h-0 w-[320px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-white/10 p-6 xl:flex">
           {leaderboard && leaderboard.length > 0 ? (
-            <div className="liquid-glass flex flex-col gap-2 rounded-[20px] p-5">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="liquid-glass flex flex-col gap-2 rounded-[20px] p-5"
+            >
               <div className="flex items-center justify-between">
                 <span className="font-grotesk text-[13px] uppercase text-cream">
                   Leaderboard
@@ -455,11 +537,16 @@ const Home = () => {
               <p className="mt-1 text-center font-mono text-[10px] text-cream/45">
                 Updates when you finish quiz or bug finder below
               </p>
-            </div>
+            </motion.div>
           ) : null}
 
           {/* DAILY QUESTS */}
-          <div className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3"
+          >
             <div className="flex items-center justify-between">
               <span className="font-grotesk text-[13px] text-cream uppercase">Daily Quest</span>
               <div className="flex items-center gap-2">
@@ -471,34 +558,44 @@ const Home = () => {
               <div key={i} className="flex flex-col gap-2">
                 <span className="font-mono text-cream text-sm">{q.name}</span>
                 <div className="w-full h-1.5 bg-white/10 rounded-full">
-                  <div className="h-full bg-neon rounded-full" style={{ width: `${(q.progress / q.total) * 100}%` }} />
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(q.progress / q.total) * 100}%` }}
+                    transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
+                    className="h-full bg-neon rounded-full" 
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-cream/40 text-xs">{q.progress}/{q.total}</span>
                   {q.progress >= q.total ? (
                     <CheckCircle size={18} className="text-neon" />
                   ) : (
-                    <button className="rounded-[10px] px-3 py-1.5 bg-neon text-[#010828] font-grotesk uppercase text-xs hover:brightness-110">
+                    <button className="rounded-[10px] px-3 py-1.5 bg-neon text-[#010828] font-grotesk uppercase text-xs hover:brightness-110 active:scale-95 transition-all">
                       Play Now
                     </button>
                   )}
                 </div>
               </div>
             ))}
-          </div>
+          </motion.div>
 
           {/* DOWNLOAD APP */}
-          <div className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3"
+          >
             <span className="font-grotesk text-[16px] text-cream uppercase">Download Mobile App</span>
             <span className="font-mono text-cream/50 text-xs">Scan the QR code using your phone</span>
             <div className="w-24 h-24 bg-white/5 liquid-glass rounded-[12px] flex items-center justify-center">
               <QrCode size={40} className="text-cream/30" />
             </div>
             <div className="flex gap-2">
-              <button className="liquid-glass rounded-[12px] px-3 py-2 font-mono text-xs text-cream/70">🍎 App Store</button>
-              <button className="liquid-glass rounded-[12px] px-3 py-2 font-mono text-xs text-cream/70">▶️ Play Store</button>
+              <button className="liquid-glass rounded-[12px] px-3 py-2 font-mono text-xs text-cream/70 hover:bg-white/10 transition-colors">🍎 App Store</button>
+              <button className="liquid-glass rounded-[12px] px-3 py-2 font-mono text-xs text-cream/70 hover:bg-white/10 transition-colors">▶️ Play Store</button>
             </div>
-          </div>
+          </motion.div>
         </aside>
       </div>
 
@@ -516,7 +613,7 @@ const Home = () => {
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex flex-col items-center gap-1 text-cream/50 hover:text-neon"
+                className="flex flex-col items-center gap-1 text-cream/50 hover:text-neon transition-colors"
               >
                 <Icon size={20} />
                 <span className="font-mono text-[10px]">{item.label}</span>
@@ -535,8 +632,8 @@ const Home = () => {
                   });
                 }
               }}
-              className={`flex flex-col items-center gap-1 ${
-                item.active ? "text-neon" : "text-cream/50"
+              className={`flex flex-col items-center gap-1 transition-colors ${
+                item.active ? "text-neon" : "text-cream/50 hover:text-neon"
               }`}
             >
               <Icon size={20} />
