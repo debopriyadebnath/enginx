@@ -1,12 +1,7 @@
 "use client";
 
 import { io, type Socket } from "socket.io-client";
-
-const defaultUrl = "http://localhost:8000";
-
-function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SOCKET_URL ?? defaultUrl;
-}
+import { getSocketBaseUrl, getSocketIoPath } from "@/lib/gameServerUrls";
 
 const socketOptions = {
   transports: ["websocket", "polling"] as string[],
@@ -88,8 +83,9 @@ export function acquireGameSocket(sessionToken: string): Socket {
 
   boundToken = sessionToken;
   lastError = null;
-  socket = io(getBaseUrl(), {
+  socket = io(getSocketBaseUrl(), {
     ...socketOptions,
+    path: getSocketIoPath(),
     auth: { token: sessionToken },
   });
   attachCoreListeners(socket);

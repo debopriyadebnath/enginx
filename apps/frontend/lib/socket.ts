@@ -9,12 +9,7 @@ import {
   releaseGameSocket,
   subscribeGameSocket,
 } from "@/lib/gameSocketStore";
-
-const defaultUrl = "http://localhost:8000";
-
-function getSocketBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SOCKET_URL ?? defaultUrl;
-}
+import { getSocketBaseUrl, getSocketIoPath } from "@/lib/gameServerUrls";
 
 const socketOptions = {
   transports: ["websocket", "polling"] as string[],
@@ -32,6 +27,7 @@ const socketOptions = {
 export function createAuthenticatedSocket(sessionToken: string): Socket {
   return io(getSocketBaseUrl(), {
     ...socketOptions,
+    path: getSocketIoPath(),
     auth: { token: sessionToken },
   });
 }

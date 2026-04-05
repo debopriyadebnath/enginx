@@ -11,7 +11,11 @@ export function createServer_() {
 
   const corsOrigin = getFrontendOrigins();
 
+  /** Must match frontend `NEXT_PUBLIC_SOCKET_IO_PATH` (default `/socket.io`). */
+  const socketIoPath = process.env.SOCKET_IO_PATH?.trim() || "/socket.io";
+
   const io = new Server(server, {
+    path: socketIoPath,
     cors: {
       origin: corsOrigin,
       methods: ["GET", "POST", "OPTIONS"],
