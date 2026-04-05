@@ -3,21 +3,23 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { GameHud } from "@/components/game/GameHud";
-import { QuestionRenderer } from "@/components/game/QuestionRenderer";
+import { CodeWithBlank } from "@/components/bug-finder/CodeWithBlank";
+import { CodeTerminal } from "@/components/ui/code-terminal";
 import { useAuthState } from "@/lib/auth";
-import { useAuthenticatedGameSocket } from "@/lib/socket";
-import { socketQuestionToPublicQuestion } from "@/lib/socketQuestionAdapter";
-import { useMultiplayerQuiz } from "@/lib/useMultiplayerQuiz";
+import {
+  useAuthenticatedGameSocket,
+  useBugFinderMultiplayer,
+} from "@/lib/socket";
 import { useSession } from "@/lib/session";
 
-export default function MultiplayerQuizPage() {
+export default function BugFinderMultiPage() {
   const router = useRouter();
   const { token } = useSession();
   const { isLoading, isAuthenticated, user } = useAuthState();
   const [displayName, setDisplayName] = useState("");
   const { socket, connected, error: socketConnectError } =
     useAuthenticatedGameSocket();
+
   const {
     phase,
     roomId,
@@ -25,8 +27,8 @@ export default function MultiplayerQuizPage() {
     leaderboard,
     currentRound,
     deadlineAt,
-    answer,
-    setAnswer,
+    selected,
+    setSelected,
     hasSubmitted,
     lastReveal,
     mySocketId,
@@ -34,10 +36,11 @@ export default function MultiplayerQuizPage() {
     incomingChallenge,
     sendChallenge,
     respondChallenge,
+    findBugMatch,
     submitAnswer,
     resetToLobby,
     errorMessage,
-  } = useMultiplayerQuiz(socket, connected, {
+  } = useBugFinderMultiplayer(socket, connected, {
     displayName,
     myUserId: user?._id ?? null,
     sessionToken: token ?? null,
@@ -70,13 +73,10 @@ export default function MultiplayerQuizPage() {
     return () => clearInterval(id);
   }, [deadlineAt, phase, currentRound]);
 
-  /**
-   * Auto-submit when time is up. Must NOT fire on stale `secondsLeft === 0` from the
-   * previous round before the new `deadlineAt` is applied (that caused instant "Answer locked").
-   */
   useEffect(() => {
     if (phase !== "playing" || !currentRound || hasSubmitted) return;
     if (!deadlineAt || Date.now() < deadlineAt) return;
+    if (selected === null) return;
     submitAnswer();
   }, [
     secondsLeft,
@@ -84,6 +84,7 @@ export default function MultiplayerQuizPage() {
     currentRound,
     hasSubmitted,
     deadlineAt,
+    selected,
     submitAnswer,
   ]);
 
@@ -94,8 +95,9 @@ export default function MultiplayerQuizPage() {
       if (byUser) return byUser.score;
     }
     if (!mySocketId) return 0;
-    const bySocket = leaderboard.find((e) => e.userId === mySocketId);
-    return bySocket?.score ?? 0;
+    return (
+      leaderboard.find((e) => e.userId === mySocketId)?.score ?? 0
+    );
   }, [leaderboard, mySocketId, user?._id]);
 
   const myReveal = useMemo(() => {
@@ -107,11 +109,6 @@ export default function MultiplayerQuizPage() {
     if (!mySocketId) return null;
     return players.find((p) => p.socketId !== mySocketId) ?? null;
   }, [players, mySocketId]);
-
-  const publicQ = useMemo(() => {
-    if (!currentRound?.question) return null;
-    return socketQuestionToPublicQuestion(currentRound.question);
-  }, [currentRound]);
 
   const handleChallenge = useCallback(
     (targetUserId: string) => {
@@ -128,9 +125,9 @@ export default function MultiplayerQuizPage() {
     );
   }
 
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
+
+  const q = currentRound?.challenge;
 
   return (
     <div className="relative min-h-[100dvh] bg-[#010828] px-4 py-10">
@@ -144,53 +141,54 @@ export default function MultiplayerQuizPage() {
       />
       <div className="relative z-10 mx-auto max-w-3xl">
         <Link
-          href="/play"
-          className="font-mono text-sm text-neon hover:underline"
+          href="/play/bug-finder"
+          className="font-mono text-sm text-amber-400 hover:underline"
         >
-          ← Quiz Arena
+          ← Bug finder (solo)
         </Link>
 
         <h1 className="font-anton mt-6 text-3xl uppercase text-cream">
-          1v1 live quiz
+          1v1 bug finder
         </h1>
         <p className="mt-2 font-mono text-sm leading-relaxed text-cream/70">
-          See who&apos;s online, pick someone, and send a challenge. They must
-          accept before the match starts. Each round uses a{" "}
-          <span className="text-neon">10 second</span> server timer.
+          Same C fill-the-blank challenges for both players.{" "}
+          <span className="text-amber-400">10 second</span> rounds. Wrong answers
+          can cost points (server rules).
         </p>
 
         {!connected && (
           <p className="mt-4 rounded-[12px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 font-mono text-sm text-amber-100">
             {socketConnectError
               ? `Cannot reach game server: ${socketConnectError}`
-              : "Connecting to game server…"}
+              : "Connecting…"}
           </p>
         )}
 
-        {connected && errorMessage && (phase === "idle" || phase === "waiting_challenge") && (
-          <p className="mt-4 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-sm text-red-100">
-            {errorMessage}
-          </p>
-        )}
+        {connected &&
+          errorMessage &&
+          (phase === "idle" || phase === "waiting_challenge") && (
+            <p className="mt-4 rounded-[12px] border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-sm text-red-100">
+              {errorMessage}
+            </p>
+          )}
 
         {phase === "playing" && !currentRound && (
-          <div className="liquid-glass mt-8 space-y-4 rounded-[24px] border border-neon/20 bg-neon/[0.06] p-8 text-center">
+          <div className="liquid-glass mt-8 space-y-4 rounded-[24px] border border-amber-500/20 bg-amber-500/[0.06] p-8 text-center">
             <p className="font-anton text-xl uppercase text-cream">
-              Teammate found
+              Opponent found
             </p>
             <p className="font-mono text-sm text-cream/70">
-              Syncing the first question… This usually takes a second.
+              Loading first challenge…
             </p>
             {opponent && (
               <p className="font-mono text-sm text-cream">
-                vs{" "}
-                <span className="text-neon">{opponent.username}</span>
+                vs <span className="text-amber-400">{opponent.username}</span>
               </p>
             )}
             {roomId && (
               <p className="font-mono text-[10px] text-cream/40">{roomId}</p>
             )}
-            <div className="mx-auto mt-4 h-8 w-8 animate-spin rounded-full border-2 border-cream/20 border-t-neon" />
+            <div className="mx-auto mt-4 h-8 w-8 animate-spin rounded-full border-2 border-cream/20 border-t-amber-400" />
           </div>
         )}
 
@@ -209,19 +207,29 @@ export default function MultiplayerQuizPage() {
               />
             </div>
 
+            <button
+              type="button"
+              disabled={!connected || phase === "waiting_challenge"}
+              onClick={() => findBugMatch(displayName.trim() || "Player")}
+              className="w-full rounded-[12px] border border-amber-500/40 bg-amber-500/15 px-4 py-3 font-mono text-sm font-semibold uppercase text-amber-100 hover:bg-amber-500/25 disabled:opacity-50"
+            >
+              {phase === "waiting_challenge"
+                ? "Finding opponent…"
+                : "Quick match (queue)"}
+            </button>
+
             <div>
               <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
-                Online (tap to challenge)
+                Or challenge someone online
               </p>
               {!user?._id && (
                 <p className="mt-2 font-mono text-sm text-amber-200/90">
-                  Sign in to see the player list and send challenges.
+                  Sign in to see the player list.
                 </p>
               )}
               {user?._id && presenceUsers.length === 0 && (
                 <p className="mt-3 font-mono text-sm text-cream/55">
-                  No one else online yet. Open another session (e.g. incognito
-                  with a second account) to test.
+                  No one else online yet.
                 </p>
               )}
               {user?._id && presenceUsers.length > 0 && (
@@ -240,7 +248,7 @@ export default function MultiplayerQuizPage() {
                           !connected || phase === "waiting_challenge"
                         }
                         onClick={() => handleChallenge(u.userId)}
-                        className="shrink-0 rounded-[10px] bg-neon px-4 py-2 font-mono text-xs font-semibold uppercase text-[#010828] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="shrink-0 rounded-[10px] bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 font-mono text-xs font-semibold uppercase text-[#010828] hover:brightness-110 disabled:opacity-50"
                       >
                         Challenge
                       </button>
@@ -252,7 +260,7 @@ export default function MultiplayerQuizPage() {
 
             {phase === "waiting_challenge" && (
               <p className="text-center font-mono text-sm text-cream/70">
-                Waiting for them to accept your challenge…
+                Waiting…
               </p>
             )}
           </div>
@@ -260,13 +268,15 @@ export default function MultiplayerQuizPage() {
 
         {incomingChallenge && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-            <div className="liquid-glass max-w-md rounded-[24px] border border-neon/30 p-8 shadow-2xl">
+            <div className="liquid-glass max-w-md rounded-[24px] border border-amber-500/30 p-8 shadow-2xl">
               <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
-                Challenge
+                Bug finder challenge
               </p>
               <p className="font-mono mt-2 text-lg text-cream">
-                <span className="text-neon">{incomingChallenge.fromUsername}</span>{" "}
-                wants to play a 1v1 quiz with you.
+                <span className="text-amber-400">
+                  {incomingChallenge.fromUsername}
+                </span>{" "}
+                wants a 1v1 C bug-finder match.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
@@ -274,7 +284,7 @@ export default function MultiplayerQuizPage() {
                   onClick={() =>
                     respondChallenge(incomingChallenge.challengeId, true)
                   }
-                  className="flex-1 rounded-[12px] bg-neon px-4 py-3 font-anton uppercase text-[#010828] hover:brightness-110"
+                  className="flex-1 rounded-[12px] bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 font-anton uppercase text-[#010828] hover:brightness-110"
                 >
                   Accept
                 </button>
@@ -292,93 +302,90 @@ export default function MultiplayerQuizPage() {
           </div>
         )}
 
-        {phase === "playing" && publicQ && currentRound && (
+        {phase === "playing" && q && (
           <div className="mt-8 space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
-                  Match
-                </p>
-                <p className="font-mono text-sm text-cream">
-                  vs{" "}
-                  <span className="text-neon">
-                    {opponent?.username ?? "…"}
-                  </span>
-                </p>
-                <p className="mt-1 font-mono text-[10px] text-cream/45">
-                  {roomId}
-                </p>
-              </div>
-              <GameHud
-                score={myScore}
-                streak={0}
-                bestStreak={0}
-                questionIndex={currentRound.questionIndex}
-                totalQuestions={currentRound.totalQuestions}
-                secondsLeft={secondsLeft}
-                phase="multi"
+            <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-cream/80">
+              <span className="rounded-full border border-amber-500/30 px-2.5 py-1 text-amber-200">
+                {myScore} pts
+              </span>
+              <span className="tabular-nums text-amber-200/90">
+                {secondsLeft}s · {currentRound.questionIndex + 1}/
+                {currentRound.totalQuestions}
+              </span>
+            </div>
+
+            <div>
+              <p className="font-mono text-[10px] uppercase text-cream/45">
+                {q.concept} · {q.difficulty}
+              </p>
+              <h2 className="font-grotesk mt-1 text-xl uppercase text-cream">
+                {q.title}
+              </h2>
+              <p className="mt-2 font-mono text-sm text-cream/70">
+                {q.description}
+              </p>
+            </div>
+
+            <CodeTerminal title={`${q.id}.c`} subtitle="bug-finder · 1v1">
+              <CodeWithBlank
+                codeTemplate={q.codeTemplate}
+                blankDisplay={selected}
               />
-            </div>
+            </CodeTerminal>
 
-            <div className="liquid-glass rounded-[24px] border border-white/10 p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-cream/90">
-                  {publicQ.type}
-                </span>
-                <span className="font-mono text-[10px] text-cream/45">
-                  {publicQ.timeLimit}s limit
-                </span>
-              </div>
-              {publicQ.type !== "debug" &&
-              !(
-                publicQ.type === "math" &&
-                (!publicQ.options || publicQ.options.length === 0)
-              ) ? (
-                <h2 className="font-grotesk mt-4 text-xl leading-snug text-cream sm:text-2xl">
-                  {publicQ.question}
-                </h2>
-              ) : null}
-
-              <div className="mt-6">
-                <QuestionRenderer
-                  question={publicQ}
-                  value={answer}
-                  onChange={setAnswer}
+            <p className="font-mono text-[11px] uppercase tracking-wider text-cream/50">
+              Pick the token for the blank
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {q.options.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
                   disabled={hasSubmitted}
-                />
-              </div>
-              <button
-                type="button"
-                disabled={hasSubmitted || !connected}
-                onClick={submitAnswer}
-                className="mt-6 w-full rounded-[12px] border border-neon/50 bg-neon/15 px-4 py-3 font-anton uppercase text-neon hover:bg-neon/25 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {hasSubmitted ? "Answer sent — wait for round" : "Submit answer"}
-              </button>
+                  onClick={() => setSelected(opt)}
+                  className={`rounded-xl border px-3 py-3 font-mono text-sm transition ${
+                    selected === opt
+                      ? "border-amber-400 bg-amber-500/25 text-amber-100"
+                      : "border-white/15 text-cream hover:bg-white/10"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
             </div>
 
-            {lastReveal && (
-              <div className="liquid-glass rounded-[20px] border border-white/10 p-5">
-                <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
+            <button
+              type="button"
+              disabled={selected === null || hasSubmitted}
+              onClick={() => submitAnswer()}
+              className="w-full rounded-[14px] bg-gradient-to-r from-amber-500 to-orange-500 py-4 font-grotesk uppercase text-[#010828] disabled:opacity-40"
+            >
+              {hasSubmitted ? "Locked in" : "Lock in"}
+            </button>
+
+            {lastReveal && myReveal && (
+              <div className="liquid-glass rounded-[18px] border border-white/10 p-5">
+                <p className="font-mono text-xs uppercase text-cream/50">
                   Round result
                 </p>
                 <p className="mt-2 font-mono text-sm text-cream">
-                  Correct answer:{" "}
-                  <span className="text-neon">{lastReveal.correctAnswer}</span>
+                  Correct blank:{" "}
+                  <span className="text-amber-400">{lastReveal.correctAnswer}</span>
                 </p>
-                {myReveal && (
-                  <p className="mt-2 font-mono text-sm text-cream/90">
-                    You: {myReveal.isCorrect ? "✓" : "✗"} ·{" "}
-                    {myReveal.points >= 0 ? "+" : ""}
-                    {myReveal.points} pts this round
-                  </p>
-                )}
+                <p className="mt-1 font-mono text-sm text-cream/80">
+                  {lastReveal.explanation}
+                </p>
+                <p className="mt-2 font-mono text-sm">
+                  You: {myReveal.isCorrect ? "✓" : "✗"} ·{" "}
+                  {myReveal.points >= 0 ? "+" : ""}
+                  {myReveal.points} pts
+                </p>
               </div>
             )}
 
             {leaderboard.length > 0 && (
               <div className="liquid-glass rounded-[20px] border border-white/10 p-5">
-                <p className="font-mono text-xs uppercase tracking-wider text-cream/50">
+                <p className="font-mono text-xs uppercase text-cream/50">
                   Standings
                 </p>
                 <ol className="mt-3 space-y-2 font-mono text-sm text-cream">
@@ -386,13 +393,12 @@ export default function MultiplayerQuizPage() {
                     <li key={row.userId} className="flex justify-between gap-4">
                       <span>
                         {i + 1}. {row.username}
-                        {row.userId === user?._id || row.userId === mySocketId ? (
-                          <span className="text-neon"> (you)</span>
-                        ) : null}
+                        {(row.userId === user?._id ||
+                          row.userId === mySocketId) && (
+                          <span className="text-amber-400"> (you)</span>
+                        )}
                       </span>
-                      <span className="tabular-nums text-cream/90">
-                        {row.score} pts
-                      </span>
+                      <span className="tabular-nums">{row.score} pts</span>
                     </li>
                   ))}
                 </ol>
@@ -402,41 +408,30 @@ export default function MultiplayerQuizPage() {
         )}
 
         {phase === "ended" && (
-          <div className="liquid-glass mt-8 space-y-6 rounded-[24px] border border-white/10 p-8 text-center">
-            <h2 className="font-anton text-2xl uppercase text-cream">
-              Match finished
-            </h2>
-            <ol className="mx-auto max-w-sm space-y-2 text-left font-mono text-sm text-cream">
-              {leaderboard.map((row, i) => (
-                <li key={row.userId} className="flex justify-between gap-4">
-                  <span>
-                    {i + 1}. {row.username}
-                  </span>
-                  <span className="text-neon">{row.score} pts</span>
-                </li>
-              ))}
-            </ol>
+          <div className="liquid-glass mt-8 rounded-[24px] border border-amber-500/25 p-8 text-center">
+            <p className="font-anton text-xl uppercase text-cream">Match over</p>
+            <p className="mt-4 font-mono text-neon tabular-nums text-2xl">
+              {myScore} pts
+            </p>
             <button
               type="button"
               onClick={resetToLobby}
-              className="rounded-[12px] bg-neon px-6 py-3 font-anton uppercase text-[#010828] hover:brightness-110"
+              className="mt-6 rounded-[12px] bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 font-grotesk uppercase text-[#010828]"
             >
-              Play again
+              Back to lobby
             </button>
           </div>
         )}
 
         {phase === "aborted" && (
-          <div className="liquid-glass mt-8 rounded-[24px] border border-amber-500/20 p-8 text-center">
-            <p className="font-mono text-cream">
-              Opponent disconnected — match ended.
-            </p>
+          <div className="mt-8 rounded-[20px] border border-rose-500/30 bg-rose-500/10 p-6 text-center">
+            <p className="font-mono text-cream">Match ended (disconnect).</p>
             <button
               type="button"
               onClick={resetToLobby}
-              className="mt-6 rounded-[12px] bg-neon px-6 py-3 font-anton uppercase text-[#010828] hover:brightness-110"
+              className="mt-4 rounded-[12px] border border-white/20 px-4 py-2 font-mono text-sm text-cream"
             >
-              Back to lobby
+              OK
             </button>
           </div>
         )}

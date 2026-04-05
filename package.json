@@ -1,0 +1,10 @@
+{
+  "name": "enginx",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix apps/frontend run build && npm --prefix apps/backend run build",
+    "build:frontend": "npm --prefix apps/frontend run build",
+    "build:backend": "npm --prefix apps/backend run build",
+    "typecheck:backend": "npm --prefix apps/backend run typecheck"
+  }
+}

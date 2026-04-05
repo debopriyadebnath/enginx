@@ -14,6 +14,8 @@ type OnlineEntry = {
 const onlineByUser = new Map<string, OnlineEntry>();
 const socketToUserId = new Map<string, string>();
 
+export type ChallengeGameType = "quiz" | "bug_finder";
+
 export type ChallengeRecord = {
   id: string;
   fromUserId: string;
@@ -21,6 +23,8 @@ export type ChallengeRecord = {
   fromSocketId: string;
   fromUsername: string;
   createdAt: number;
+  /** Default `quiz` for backwards compatibility */
+  gameType: ChallengeGameType;
 };
 
 const challenges = new Map<string, ChallengeRecord>();
@@ -86,7 +90,8 @@ export function createChallenge(
   fromUserId: string,
   toUserId: string,
   fromSocketId: string,
-  fromUsername: string
+  fromUsername: string,
+  gameType: ChallengeGameType = "quiz"
 ): ChallengeRecord | null {
   if (fromUserId === toUserId) return null;
   if (!isUserOnline(toUserId)) return null;
@@ -98,6 +103,7 @@ export function createChallenge(
     fromSocketId,
     fromUsername: fromUsername.trim() || "Player",
     createdAt: Date.now(),
+    gameType,
   };
   challenges.set(id, rec);
   return rec;

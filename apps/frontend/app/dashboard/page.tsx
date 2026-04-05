@@ -9,6 +9,7 @@ import { useAuthenticatedGameSocket } from "@/lib/socket";
 import { useSession } from "@/lib/session";
 import { QuizArenaSection } from "@/components/dashboard/QuizArenaSection";
 import { BugFinderSection } from "@/components/dashboard/BugFinderSection";
+import { MindSnapSection } from "@/components/dashboard/MindSnapSection";
 import {
   Calculator, Code2, BarChart2, Grid3x3,
   Bot, Eye, Shield, TrendingUp,
@@ -44,6 +45,7 @@ interface GameCard {
   icon: React.ElementType;
   mode: 'SOLO' | 'MULTIPLAYER';
   scrollTo?: "bug-finder";
+  href?: string;
 }
 
 const GAMES: Record<Category, { cursive: string; cards: GameCard[] }> = {
@@ -93,7 +95,13 @@ const GAMES: Record<Category, { cursive: string; cards: GameCard[] }> = {
     cursive: 'Bonus Games',
     cards: [
       { title: 'DEBUG CHALLENGE', desc: 'Find errors in small code snippets before time runs out.', icon: Bug, mode: 'SOLO' },
-      { title: 'MEMORY MATCH', desc: 'Match tech terms with their definitions in this card flip game.', icon: Layers, mode: 'SOLO' },
+      {
+        title: 'MIND SNAP',
+        desc: 'Memorize a 4×4 grid, then tap the correct cells — timing and scoring from suduku.json.',
+        icon: Layers,
+        mode: 'SOLO',
+        href: '/play/mind-snap',
+      },
       { title: 'QUIZ BATTLE', desc: 'Multiplayer rapid-fire subject quizzes against other players.', icon: Swords, mode: 'MULTIPLAYER' },
     ],
   },
@@ -317,6 +325,7 @@ const Home = () => {
             <QuizArenaSection />
 
             <BugFinderSection />
+            <MindSnapSection />
 
             {/* GAME CATEGORIES */}
             <span className="font-grotesk text-[11px] text-cream/50 uppercase tracking-widest">Game Categories</span>
@@ -358,9 +367,13 @@ const Home = () => {
                       return (
                         <div
                           key={game.title}
-                          role={game.scrollTo ? "button" : undefined}
-                          tabIndex={game.scrollTo ? 0 : undefined}
+                          role={game.scrollTo || game.href ? "button" : undefined}
+                          tabIndex={game.scrollTo || game.href ? 0 : undefined}
                           onClick={() => {
+                            if (game.href) {
+                              router.push(game.href);
+                              return;
+                            }
                             if (game.scrollTo === "bug-finder") {
                               document.getElementById("bug-finder")?.scrollIntoView({
                                 behavior: "smooth",
@@ -379,9 +392,16 @@ const Home = () => {
                                 block: "start",
                               });
                             }
+                            if (
+                              game.href &&
+                              (e.key === "Enter" || e.key === " ")
+                            ) {
+                              e.preventDefault();
+                              router.push(game.href);
+                            }
                           }}
                           className={`liquid-glass rounded-[24px] p-5 flex flex-col gap-3 hover:bg-white/10 hover:scale-[1.02] transition-all group ${
-                            game.scrollTo ? "cursor-pointer" : ""
+                            game.scrollTo || game.href ? "cursor-pointer" : ""
                           }`}
                         >
                           <div className={`rounded-[14px] w-12 h-12 flex items-center justify-center ${styles.bg}`}>

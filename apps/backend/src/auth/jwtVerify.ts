@@ -1,4 +1,4 @@
-import { createLocalJWKSet, jwtVerify } from "jose";
+import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
 
 /** Matches Convex Auth `TOKEN_SUB_CLAIM_DIVIDER` — `sub` is `userId|sessionId`. */
 export const CONVEX_AUTH_SUB_DIVIDER = "|";
@@ -28,7 +28,7 @@ function getJwksKeySet() {
     return jwksSet;
   }
   const raw = requireEnv("JWKS");
-  const parsed = JSON.parse(raw) as { keys: unknown[] };
+  const parsed = JSON.parse(raw) as JSONWebKeySet;
   if (!parsed?.keys || !Array.isArray(parsed.keys)) {
     throw new Error("JWKS must be a JSON object with a `keys` array");
   }
