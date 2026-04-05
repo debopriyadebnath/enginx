@@ -1,6 +1,11 @@
 import { Server } from "socket.io";
 import type { CustomSocket } from "../types/types.js";
 import { socketAuthMiddleware } from "../middleware/auth.js";
+import { bugFinderGameManager } from "../game/bugFinderGameManager.js";
+import {
+  checkBlankAnswer,
+  packChallengeWire,
+} from "../game/bugFinderCodes.js";
 import { gameManager } from "../game/gameManager.js";
 import {
   createChallenge,
@@ -14,6 +19,7 @@ import {
   removeSocket,
   clearChallengesForUser,
 } from "../presence/presenceManager.js";
+import type { ChallengeGameType } from "../presence/presenceManager.js";
 import {
   MULTIPLAYER_QUESTION_SECONDS,
   checkAnswerJson,
@@ -87,7 +93,11 @@ export const initializeSocket = (io: Server) => {
     socket.on(
       "challenge_user",
       (
-        data: { targetUserId: string; username?: string },
+        data: {
+          targetUserId: string;
+          username?: string;
+          gameType?: ChallengeGameType;
+        },
         callback: (ack: {
           ok: boolean;
           challengeId?: string;
@@ -101,6 +111,8 @@ export const initializeSocket = (io: Server) => {
           }
           const fromUsername =
             data.username?.trim() || `Player-${userId.slice(-4)}`;
+          const gameType: ChallengeGameType =
+            data.gameType === "bug_finder" ? "bug_finder" : "quiz";
           registerPresence(socket.id, userId, fromUsername);
 
           for (const c of pruneExpiredChallenges()) {
@@ -114,7 +126,8 @@ export const initializeSocket = (io: Server) => {
             userId,
             data.targetUserId,
             socket.id,
-            fromUsername
+            fromUsername,
+            gameType
           );
           if (!rec) {
             callback({ ok: false, error: "offline_or_self" });
@@ -125,6 +138,7 @@ export const initializeSocket = (io: Server) => {
             challengeId: rec.id,
             fromUserId: userId,
             fromUsername: rec.fromUsername,
+            gameType: rec.gameType,
           });
 
           callback({ ok: true, challengeId: rec.id });
@@ -168,9 +182,22 @@ export const initializeSocket = (io: Server) => {
 
           const nameA = c.fromUsername;
           const nameB = getUsernameForUser(userId);
+
+          if (c.gameType === "bug_finder") {
+            const roomId = bugFinderGameManager.createRoomFromPair(
+              [c.fromSocketId, socket.id],
+              [nameA, nameB],
+              [c.fromUserId, userId]
+            );
+            beginBugFinderGame(io, roomId);
+            callback({ ok: true, roomId });
+            return;
+          }
+
           const roomId = gameManager.createRoomFromPair(
             [c.fromSocketId, socket.id],
-            [nameA, nameB]
+            [nameA, nameB],
+            [c.fromUserId, userId]
           );
 
           beginGame(io, roomId);
@@ -187,8 +214,12 @@ export const initializeSocket = (io: Server) => {
      */
     socket.on("join-game", (data: { username?: string }, callback) => {
       try {
+        if (!userId) {
+          callback({ status: "error", message: "Auth required" });
+          return;
+        }
         const username = data?.username || `Player-${userId?.slice(-4)}`;
-        const roomId = gameManager.joinGame(socket.id);
+        const roomId = gameManager.joinGame(socket.id, userId);
 
         if (!roomId) {
           socket.emit("waiting-for-opponent");
@@ -275,6 +306,7 @@ export const initializeSocket = (io: Server) => {
     socket.on("disconnect", () => {
       console.log(`[DISCONNECT] User ${userId} disconnected`);
       gameManager.removeFromQueue(socket.id);
+      bugFinderGameManager.removeFromQueue(socket.id);
 
       const leftUserId = removeSocket(socket.id);
       if (leftUserId) {
@@ -298,9 +330,180 @@ export const initializeSocket = (io: Server) => {
           gameManager.endGame(room.id);
         }
       });
+      bugFinderGameManager.getAllRooms().forEach((room) => {
+        if (room.players.has(socket.id)) {
+          io.to(room.id).emit("player-disconnected", {
+            message: "Opponent disconnected",
+          });
+          bugFinderGameManager.endGame(room.id);
+        }
+      });
+    });
+
+    /** Bug finder: queue match (same pattern as join-game) */
+    socket.on("join-bug-game", (data: { username?: string }, callback) => {
+      try {
+        if (!userId) {
+          callback({ status: "error", message: "Auth required" });
+          return;
+        }
+        const username = data?.username || `Player-${userId?.slice(-4)}`;
+        const roomId = bugFinderGameManager.joinGame(socket.id, userId);
+        if (!roomId) {
+          socket.emit("bf-waiting-for-opponent");
+          callback({ status: "waiting" });
+        } else {
+          const room = bugFinderGameManager.getRoom(roomId);
+          if (room) {
+            bugFinderGameManager.updatePlayerName(roomId, socket.id, username);
+            beginBugFinderGame(io, roomId);
+            callback({
+              status: "game_started",
+              roomId,
+              players: Array.from(room.players.values()).map((p) => ({
+                socketId: p.socketId,
+                username: p.username,
+                score: p.score,
+              })),
+            });
+          }
+        }
+      } catch (error) {
+        console.error("[JOIN_BUG_GAME]", error);
+        callback({ status: "error", message: "Failed to join" });
+      }
+    });
+
+    socket.on(
+      "submit-bug-answer",
+      (data: { roomId: string; answer: string }) => {
+        try {
+          const room = bugFinderGameManager.getRoom(data.roomId);
+          if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+          }
+          bugFinderGameManager.recordAnswer(
+            data.roomId,
+            socket.id,
+            data.answer
+          );
+          socket.emit("bf-answer-received", { message: "Answer recorded" });
+        } catch (error) {
+          console.error("[SUBMIT_BUG_ANSWER]", error);
+          socket.emit("error", { message: "Failed to submit answer" });
+        }
+      }
+    );
+
+    socket.on("get-bf-state", (data: { roomId: string }, callback) => {
+      try {
+        const room = bugFinderGameManager.getRoom(data.roomId);
+        if (!room) {
+          callback({ error: "Room not found" });
+          return;
+        }
+        const ch = bugFinderGameManager.getCurrentChallenge(data.roomId);
+        const leaderboard = bugFinderGameManager.getLeaderboard(data.roomId);
+        callback({
+          roomId: data.roomId,
+          gameState: room.gameState,
+          questionIndex: room.currentQuestionIndex,
+          totalQuestions: bugFinderGameManager.getRoundCount(data.roomId),
+          challenge: ch ? packChallengeWire(ch) : null,
+          leaderboard,
+          players: Array.from(room.players.values()).map((p) => ({
+            socketId: p.socketId,
+            username: p.username,
+            score: p.score,
+          })),
+        });
+      } catch (error) {
+        console.error("[GET_BF_STATE]", error);
+        callback({ error: "Failed to get state" });
+      }
     });
   });
 };
+
+function beginBugFinderGame(io: Server, roomId: string): void {
+  const room = bugFinderGameManager.getRoom(roomId);
+  if (!room) return;
+  room.players.forEach((_, playerSocketId) => {
+    io.sockets.sockets.get(playerSocketId)?.join(roomId);
+  });
+  io.to(roomId).emit("bf-game-started", {
+    roomId,
+    gameKind: "bug_finder" as const,
+    players: Array.from(room.players.values()).map((p) => ({
+      socketId: p.socketId,
+      username: p.username,
+      score: p.score,
+    })),
+  });
+  setTimeout(() => {
+    sendBugFinderQuestion(io, roomId);
+  }, NEXT_QUESTION_DELAY);
+}
+
+function sendBugFinderQuestion(io: Server, roomId: string) {
+  const room = bugFinderGameManager.getRoom(roomId);
+  const ch = bugFinderGameManager.getCurrentChallenge(roomId);
+  if (!room || !ch) {
+    console.log(`[BF_SEND] Room or challenge missing: ${roomId}`);
+    return;
+  }
+  room.gameState = "question";
+  room.players.forEach((p) => {
+    p.currentAnswer = null;
+  });
+  const total = bugFinderGameManager.getRoundCount(roomId);
+  io.to(roomId).emit("bf-question", {
+    questionIndex: room.currentQuestionIndex,
+    totalQuestions: total,
+    challenge: packChallengeWire(ch),
+  });
+
+  const roomState: RoomState = {};
+  roomState.questionTimer = setTimeout(() => {
+    room.gameState = "answer";
+    const scores = bugFinderGameManager.calculateRoundScores(roomId);
+    const correctToken = ch.blanks[0]?.correctAnswer ?? "";
+    io.to(roomId).emit("bf-answer-time-up", {
+      correctAnswer: correctToken,
+      explanation: ch.explanation,
+      scores: Object.fromEntries(
+        Array.from(room.players.entries()).map(([socketId, player]) => [
+          socketId,
+          {
+            answer: player.currentAnswer,
+            isCorrect: checkBlankAnswer(ch, player.currentAnswer ?? ""),
+            points: scores.get(socketId) ?? 0,
+          },
+        ])
+      ),
+    });
+    io.to(roomId).emit("bf-leaderboard-update", {
+      leaderboard: bugFinderGameManager.getLeaderboard(roomId),
+    });
+    roomState.answerTimer = setTimeout(() => {
+      const more = bugFinderGameManager.nextQuestion(roomId);
+      if (more) {
+        sendBugFinderQuestion(io, roomId);
+      } else {
+        room.gameState = "ended";
+        const finalLeaderboard = bugFinderGameManager.getLeaderboard(roomId);
+        io.to(roomId).emit("bf-game-ended", {
+          finalLeaderboard,
+          message: "Bug finder match complete!",
+        });
+        setTimeout(() => {
+          bugFinderGameManager.endGame(roomId);
+        }, 5000);
+      }
+    }, ANSWER_DISPLAY_TIMEOUT);
+  }, MULTIPLAYER_QUESTION_SECONDS * 1000);
+}
 
 /**
  * Send question to all players in room

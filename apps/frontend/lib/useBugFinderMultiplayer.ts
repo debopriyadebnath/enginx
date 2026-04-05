@@ -4,79 +4,53 @@ import { useMutation } from "convex/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 import { api } from "@/convex/_generated/api";
-import { rawSelectionToAnswerText } from "@/lib/quizFromPack";
 import type {
-  AnswerTimeUpPayload,
+  BFGameEndedPayload,
+  BFGameStartedPayload,
+  BFAnswerTimeUpPayload,
+  BFQuestionEventPayload,
+} from "@/lib/bugFinderMultiplayerTypes";
+import type {
   ChallengeReceivedPayload,
-  GameEndedPayload,
-  GameStartedPayload,
-  GetStateAck,
   JoinGameAck,
   LeaderboardEntry,
   MultiplayerPlayer,
   PresenceUser,
-  QuestionEventPayload,
 } from "@/lib/multiplayerTypes";
+import type { BugFinderChallengeWire } from "@/lib/bugFinderMultiplayerTypes";
 
-export type MultiplayerPhase =
+export type BFPhase =
   | "idle"
   | "waiting_challenge"
   | "playing"
   | "ended"
   | "aborted";
 
-export type UseMultiplayerQuizOptions = {
+export type UseBugFinderMultiplayerOptions = {
   displayName: string;
-  /** Convex `users` id — required for presence + challenges */
   myUserId: string | null;
-  /** Session token — used to add this match’s score to the user profile at game end */
   sessionToken?: string | null;
 };
 
-export type UseMultiplayerQuiz = {
-  phase: MultiplayerPhase;
-  roomId: string | null;
-  players: MultiplayerPlayer[];
-  leaderboard: LeaderboardEntry[];
-  currentRound: QuestionEventPayload | null;
-  deadlineAt: number | null;
-  answer: string;
-  setAnswer: (v: string) => void;
-  hasSubmitted: boolean;
-  lastReveal: AnswerTimeUpPayload | null;
-  mySocketId: string | null;
-  presenceUsers: PresenceUser[];
-  incomingChallenge: ChallengeReceivedPayload | null;
-  sendChallenge: (targetUserId: string) => void;
-  respondChallenge: (challengeId: string, accept: boolean) => void;
-  /** Legacy queue match (optional) */
-  findMatch: (username: string) => void;
-  findMatchSafe: (username: string) => void;
-  submitAnswer: () => void;
-  resetToLobby: () => void;
-  errorMessage: string | null;
-};
-
-export function useMultiplayerQuiz(
+export function useBugFinderMultiplayer(
   socket: Socket | null,
   connected: boolean,
-  options: UseMultiplayerQuizOptions
-): UseMultiplayerQuiz {
+  options: UseBugFinderMultiplayerOptions
+) {
   const { displayName, myUserId, sessionToken } = options;
-
   const applyLocalQuizPoints = useMutation(api.quizGame.applyLocalQuizPoints);
 
-  const [phase, setPhase] = useState<MultiplayerPhase>("idle");
+  const [phase, setPhase] = useState<BFPhase>("idle");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [players, setPlayers] = useState<MultiplayerPlayer[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [currentRound, setCurrentRound] = useState<QuestionEventPayload | null>(
+  const [currentRound, setCurrentRound] = useState<BFQuestionEventPayload | null>(
     null
   );
   const [deadlineAt, setDeadlineAt] = useState<number | null>(null);
-  const [answer, setAnswer] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [lastReveal, setLastReveal] = useState<AnswerTimeUpPayload | null>(
+  const [lastReveal, setLastReveal] = useState<BFAnswerTimeUpPayload | null>(
     null
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -129,7 +103,7 @@ export function useMultiplayerQuiz(
     setLeaderboard([]);
     setCurrentRound(null);
     setDeadlineAt(null);
-    setAnswer("");
+    setSelected(null);
     setHasSubmitted(false);
     setLastReveal(null);
     setErrorMessage(null);
@@ -148,7 +122,7 @@ export function useMultiplayerQuiz(
     };
 
     const onChallengeReceived = (data: ChallengeReceivedPayload) => {
-      if (data.gameType === "bug_finder") return;
+      if (data.gameType !== "bug_finder") return;
       setIncomingChallenge(data);
       setErrorMessage(null);
     };
@@ -170,12 +144,12 @@ export function useMultiplayerQuiz(
       setErrorMessage("Challenge expired.");
     };
 
-    const onWaiting = () => {
+    const onBfWaiting = () => {
       setPhase("waiting_challenge");
       setErrorMessage(null);
     };
 
-    const onGameStarted = (data: GameStartedPayload) => {
+    const onBfGameStarted = (data: BFGameStartedPayload) => {
       setIncomingChallenge(null);
       setRoomId(data.roomId);
       setPlayers(data.players);
@@ -183,25 +157,25 @@ export function useMultiplayerQuiz(
       setErrorMessage(null);
     };
 
-    const onQuestion = (payload: QuestionEventPayload) => {
+    const onBfQuestion = (payload: BFQuestionEventPayload) => {
       submitSentForRoundRef.current = null;
       setCurrentRound(payload);
-      setAnswer("");
+      setSelected(null);
       setHasSubmitted(false);
       setLastReveal(null);
-      setDeadlineAt(Date.now() + payload.question.timeLimit * 1000);
+      setDeadlineAt(Date.now() + 10_000);
       setPhase("playing");
     };
 
-    const onAnswerTimeUp = (payload: AnswerTimeUpPayload) => {
+    const onBfAnswerTimeUp = (payload: BFAnswerTimeUpPayload) => {
       setLastReveal(payload);
     };
 
-    const onLeaderboard = (data: { leaderboard: LeaderboardEntry[] }) => {
+    const onBfLeaderboard = (data: { leaderboard: LeaderboardEntry[] }) => {
       setLeaderboard(data.leaderboard);
     };
 
-    const onGameEnded = (data: GameEndedPayload) => {
+    const onBfGameEnded = (data: BFGameEndedPayload) => {
       setLeaderboard(data.finalLeaderboard);
       setPhase("ended");
       setCurrentRound(null);
@@ -219,9 +193,7 @@ export function useMultiplayerQuiz(
             sessionToken: token,
             pointsEarned: row.score,
             streak: 0,
-          }).catch(() => {
-            /* non-fatal: profile sync */
-          });
+          }).catch(() => {});
         }
       }
     };
@@ -242,16 +214,15 @@ export function useMultiplayerQuiz(
     socket.on("challenge_declined", onChallengeDeclined);
     socket.on("challenge_cancelled", onChallengeCancelled);
     socket.on("challenge_expired", onChallengeExpired);
-    socket.on("waiting-for-opponent", onWaiting);
-    socket.on("game-started", onGameStarted);
-    socket.on("question", onQuestion);
-    socket.on("answer-time-up", onAnswerTimeUp);
-    socket.on("leaderboard-update", onLeaderboard);
-    socket.on("game-ended", onGameEnded);
+    socket.on("bf-waiting-for-opponent", onBfWaiting);
+    socket.on("bf-game-started", onBfGameStarted);
+    socket.on("bf-question", onBfQuestion);
+    socket.on("bf-answer-time-up", onBfAnswerTimeUp);
+    socket.on("bf-leaderboard-update", onBfLeaderboard);
+    socket.on("bf-game-ended", onBfGameEnded);
     socket.on("player-disconnected", onPlayerDisconnected);
     socket.on("error", onError);
 
-    /** Register after listeners exist, otherwise the first `presence_update` broadcast is missed. */
     const registerPresence = () => {
       if (!socket.connected || !myUserId) return;
       socket.emit("register_presence", {
@@ -268,12 +239,12 @@ export function useMultiplayerQuiz(
       socket.off("challenge_declined", onChallengeDeclined);
       socket.off("challenge_cancelled", onChallengeCancelled);
       socket.off("challenge_expired", onChallengeExpired);
-      socket.off("waiting-for-opponent", onWaiting);
-      socket.off("game-started", onGameStarted);
-      socket.off("question", onQuestion);
-      socket.off("answer-time-up", onAnswerTimeUp);
-      socket.off("leaderboard-update", onLeaderboard);
-      socket.off("game-ended", onGameEnded);
+      socket.off("bf-waiting-for-opponent", onBfWaiting);
+      socket.off("bf-game-started", onBfGameStarted);
+      socket.off("bf-question", onBfQuestion);
+      socket.off("bf-answer-time-up", onBfAnswerTimeUp);
+      socket.off("bf-leaderboard-update", onBfLeaderboard);
+      socket.off("bf-game-ended", onBfGameEnded);
       socket.off("player-disconnected", onPlayerDisconnected);
       socket.off("error", onError);
     };
@@ -284,23 +255,29 @@ export function useMultiplayerQuiz(
     if (currentRound) return;
 
     const timer = window.setTimeout(() => {
-      socket.emit("get-state", { roomId }, (res: unknown) => {
+      socket.emit("get-bf-state", { roomId }, (res: unknown) => {
         if (!res || typeof res !== "object") return;
         if ("error" in res) return;
-        const r = res as Extract<GetStateAck, { roomId: string }>;
+        const r = res as {
+          questionIndex: number;
+          totalQuestions: number;
+          challenge: BugFinderChallengeWire | null;
+          players?: MultiplayerPlayer[];
+          leaderboard?: LeaderboardEntry[];
+        };
         if (r.players?.length) setPlayers(r.players);
         if (r.leaderboard?.length) setLeaderboard(r.leaderboard);
-        if (r.question) {
+        if (r.challenge) {
           submitSentForRoundRef.current = null;
           setCurrentRound({
             questionIndex: r.questionIndex,
             totalQuestions: r.totalQuestions,
-            question: r.question,
+            challenge: r.challenge,
           });
-          setAnswer("");
+          setSelected(null);
           setHasSubmitted(false);
           setLastReveal(null);
-          setDeadlineAt(Date.now() + r.question.timeLimit * 1000);
+          setDeadlineAt(Date.now() + 10_000);
         }
       });
     }, 1200);
@@ -321,16 +298,16 @@ export function useMultiplayerQuiz(
         {
           targetUserId,
           username: displayName.trim() || undefined,
-          gameType: "quiz" as const,
+          gameType: "bug_finder" as const,
         },
-        (ack: { ok: boolean; challengeId?: string; error?: string }) => {
+        (ack: { ok: boolean; error?: string }) => {
           if (!ack.ok) {
             setPhase("idle");
-            if (ack.error === "offline_or_self") {
-              setErrorMessage("That player is offline or unavailable.");
-            } else {
-              setErrorMessage("Could not send challenge.");
-            }
+            setErrorMessage(
+              ack.error === "offline_or_self"
+                ? "That player is offline or unavailable."
+                : "Could not send challenge."
+            );
           }
         }
       );
@@ -344,7 +321,7 @@ export function useMultiplayerQuiz(
       socket.emit(
         "challenge_response",
         { challengeId, accept },
-        (ack: { ok: boolean; error?: string }) => {
+        (ack: { ok: boolean }) => {
           setIncomingChallenge(null);
           if (!ack.ok && accept) {
             setErrorMessage("Could not start match.");
@@ -352,14 +329,12 @@ export function useMultiplayerQuiz(
           }
         }
       );
-      if (!accept) {
-        setIncomingChallenge(null);
-      }
+      if (!accept) setIncomingChallenge(null);
     },
     [socket]
   );
 
-  const findMatch = useCallback(
+  const findBugMatch = useCallback(
     (username: string) => {
       if (!socket?.connected) {
         setErrorMessage("Not connected to game server");
@@ -368,7 +343,7 @@ export function useMultiplayerQuiz(
       setErrorMessage(null);
       setPhase("waiting_challenge");
       socket.emit(
-        "join-game",
+        "join-bug-game",
         { username: username.trim() || undefined },
         (ack: JoinGameAck) => {
           if (ack.status === "waiting") {
@@ -389,26 +364,18 @@ export function useMultiplayerQuiz(
     [socket]
   );
 
-  const findMatchSafe = useCallback(
-    (username: string) => {
-      if (phase === "waiting_challenge") return;
-      findMatch(username);
-    },
-    [phase, findMatch]
-  );
-
   const submitAnswer = useCallback(() => {
     if (!socket || !roomId || !currentRound) return;
     const qIdx = currentRound.questionIndex;
-    if (hasSubmitted || submitSentForRoundRef.current === qIdx) return;
+    if (hasSubmitted || selected === null || submitSentForRoundRef.current === qIdx)
+      return;
     submitSentForRoundRef.current = qIdx;
-    const text = rawSelectionToAnswerText(
-      currentRound.question,
-      answer
-    );
-    socket.emit("submit-answer", { roomId, answer: text });
+    socket.emit("submit-bug-answer", {
+      roomId,
+      answer: selected,
+    });
     setHasSubmitted(true);
-  }, [socket, roomId, currentRound, answer, hasSubmitted]);
+  }, [socket, roomId, currentRound, selected, hasSubmitted]);
 
   const mySocketId = useMemo(
     () => socket?.id ?? mySocketIdRef.current,
@@ -422,8 +389,8 @@ export function useMultiplayerQuiz(
     leaderboard,
     currentRound,
     deadlineAt,
-    answer,
-    setAnswer,
+    selected,
+    setSelected,
     hasSubmitted,
     lastReveal,
     mySocketId,
@@ -431,8 +398,7 @@ export function useMultiplayerQuiz(
     incomingChallenge,
     sendChallenge,
     respondChallenge,
-    findMatch,
-    findMatchSafe,
+    findBugMatch,
     submitAnswer,
     resetToLobby,
     errorMessage: connected ? errorMessage : "Connecting…",
