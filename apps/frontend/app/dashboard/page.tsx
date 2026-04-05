@@ -534,25 +534,31 @@ const Home = () => {
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="liquid-glass flex flex-col gap-2 rounded-[20px] p-5"
+              className="liquid-glass relative overflow-hidden flex flex-col gap-2 rounded-[24px] p-6 backdrop-blur-2xl [--glass-bg:rgba(0,0,0,0.4)] [--glass-border-start:rgba(111,255,0,0.3)] hover:[--glass-bg:rgba(0,0,0,0.6)] hover:[--glass-bg-accent:rgba(111,255,0,0.05)] hover:shadow-[0_8px_32px_rgba(111,255,0,0.15)] hover:-translate-y-1 transition-all duration-500 group"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-grotesk text-[13px] uppercase text-cream">
+              {/* Optional Subtle Glow blob inside */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-neon/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+              <div className="flex items-center justify-between mb-2 relative z-10">
+                <span className="font-grotesk text-[14px] uppercase text-cream tracking-wide group-hover:text-neon transition-colors">
                   Leaderboard
                 </span>
-                <Trophy size={16} className="text-neon" />
+                <Trophy size={18} className="text-neon group-hover:drop-shadow-[0_0_8px_rgba(111,255,0,0.6)] transition-all" />
               </div>
-              {leaderboard.map((row, i) => (
-                <div
-                  key={row.userId}
-                  className="flex items-center justify-between font-mono text-xs text-cream/85"
-                >
-                  <span className="truncate pr-2">
-                    {i + 1}. {row.name}
-                  </span>
-                  <span className="shrink-0 text-neon">{row.score}</span>
-                </div>
-              ))}
+              
+              <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto pr-2 relative z-10 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 transition-all">
+                {leaderboard.map((row, i) => (
+                  <div
+                    key={row.userId}
+                    className="flex items-center justify-between font-mono text-xs text-cream/85 hover:bg-white/5 rounded-lg px-2 py-1.5 transition-all hover:text-white cursor-default"
+                  >
+                    <span className="truncate pr-2">
+                      <span className="text-white/40 mr-1">{i + 1}.</span> {row.name}
+                    </span>
+                    <span className="shrink-0 text-neon font-bold">{row.score}</span>
+                  </div>
+                ))}
+              </div>
               <p className="mt-1 text-center font-mono text-[10px] text-cream/45">
                 Updates when you finish quiz or bug finder below
               </p>
@@ -564,38 +570,45 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3"
+            className="liquid-glass rounded-[24px] p-6 flex flex-col gap-4 relative overflow-hidden backdrop-blur-2xl [--glass-bg:rgba(0,0,0,0.4)] [--glass-border-start:rgba(168,85,247,0.3)] hover:[--glass-bg:rgba(0,0,0,0.6)] hover:[--glass-bg-accent:rgba(168,85,247,0.05)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.15)] hover:-translate-y-1 transition-all duration-500 group"
           >
-            <div className="flex items-center justify-between">
-              <span className="font-grotesk text-[13px] text-cream uppercase">Daily Quest</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-neon text-xs">⏱ 07:49</span>
-                <span className="font-mono text-cream/40 text-xs cursor-pointer">VIEW ALL</span>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+            <div className="flex items-center justify-between relative z-10 mb-2">
+              <span className="font-grotesk text-[14px] text-cream uppercase tracking-wide group-hover:text-purple-400 transition-colors">Daily Quest</span>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-neon text-xs bg-neon/10 px-2 py-0.5 rounded flex items-center gap-1"><span className="animate-pulse">⏱</span> 07:49</span>
+                <span className="font-mono text-cream/40 text-[10px] uppercase hover:text-white cursor-pointer transition-colors">VIEW ALL</span>
               </div>
             </div>
-            {QUESTS.map((q, i) => (
-              <div key={i} className="flex flex-col gap-2">
-                <span className="font-mono text-cream text-sm">{q.name}</span>
-                <div className="w-full h-1.5 bg-white/10 rounded-full">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(q.progress / q.total) * 100}%` }}
-                    transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
-                    className="h-full bg-neon rounded-full" 
-                  />
+
+            <div className="flex flex-col gap-4 max-h-[240px] overflow-y-auto pr-2 relative z-10 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 transition-all">
+              {QUESTS.map((q, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <span className="font-mono text-cream text-sm">{q.name}</span>
+                  <div className="w-full h-1.5 bg-white/10 rounded-full">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(q.progress / q.total) * 100}%` }}
+                      transition={{ duration: 1, delay: 0.5 + i * 0.1 }}
+                      className="h-full bg-neon rounded-full" 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-cream/50 text-xs bg-white/5 px-2 py-0.5 rounded-sm">{q.progress} <span className="text-white/20">/</span> {q.total}</span>
+                    {q.progress >= q.total ? (
+                      <div className="bg-neon/10 p-1.5 rounded-lg">
+                        <CheckCircle size={16} className="text-neon" />
+                      </div>
+                    ) : (
+                      <button className="rounded-[10px] px-3 py-1.5 bg-neon text-[#010828] font-grotesk uppercase text-xs hover:brightness-110 hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-neon/40 relative z-10 cursor-pointer">
+                        Play Now
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-cream/40 text-xs">{q.progress}/{q.total}</span>
-                  {q.progress >= q.total ? (
-                    <CheckCircle size={18} className="text-neon" />
-                  ) : (
-                    <button className="rounded-[10px] px-3 py-1.5 bg-neon text-[#010828] font-grotesk uppercase text-xs hover:brightness-110 active:scale-95 transition-all">
-                      Play Now
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </motion.div>
 
           {/* DOWNLOAD APP */}
@@ -603,16 +616,22 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="liquid-glass rounded-[20px] p-5 flex flex-col gap-3"
+            className="liquid-glass rounded-[24px] p-6 flex flex-col gap-4 relative overflow-hidden backdrop-blur-2xl [--glass-bg:rgba(0,0,0,0.4)] [--glass-border-start:rgba(56,189,248,0.3)] hover:[--glass-bg:rgba(0,0,0,0.6)] hover:[--glass-bg-accent:rgba(56,189,248,0.05)] hover:shadow-[0_8px_32px_rgba(56,189,248,0.15)] hover:-translate-y-1 transition-all duration-500 group"
           >
-            <span className="font-grotesk text-[16px] text-cream uppercase">Download Mobile App</span>
-            <span className="font-mono text-cream/50 text-xs">Scan the QR code using your phone</span>
-            <div className="w-24 h-24 bg-white/5 liquid-glass rounded-[12px] flex items-center justify-center">
-              <QrCode size={40} className="text-cream/30" />
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col gap-1">
+               <span className="font-grotesk text-[15px] text-cream uppercase tracking-wide group-hover:text-sky-300 transition-colors">Download Mobile App</span>
+               <span className="font-mono text-cream/50 text-[10px] leading-relaxed">Scan the QR code to take EngineX on the go</span>
             </div>
-            <div className="flex gap-2">
-              <button className="liquid-glass rounded-[12px] px-3 py-2 font-mono text-xs text-cream/70 hover:bg-white/10 transition-colors">🍎 App Store</button>
-              <button className="liquid-glass rounded-[12px] px-3 py-2 font-mono text-xs text-cream/70 hover:bg-white/10 transition-colors">▶️ Play Store</button>
+            
+            <div className="w-20 h-20 bg-white/5 liquid-glass rounded-[16px] flex items-center justify-center relative z-10 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.2)] group-hover:border-sky-400/30 transition-all">
+              <QrCode size={36} className="text-cream/40 group-hover:text-sky-300 transition-colors" />
+            </div>
+            
+            <div className="flex gap-2 relative z-10 mt-1">
+              <button className="flex-1 liquid-glass rounded-[12px] px-2 py-2.5 font-mono text-[10px] uppercase tracking-wider text-cream/70 hover:bg-white/10 hover:text-white hover:border-white/30 transition-all cursor-pointer text-center">🍎 App Store</button>
+              <button className="flex-1 liquid-glass rounded-[12px] px-2 py-2.5 font-mono text-[10px] uppercase tracking-wider text-cream/70 hover:bg-white/10 hover:text-white hover:border-white/30 transition-all cursor-pointer text-center">▶️ Play Store</button>
             </div>
           </motion.div>
         </aside>
