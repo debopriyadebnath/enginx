@@ -207,32 +207,49 @@ function MindSnapInner() {
   const displayScore = userRow?.score ?? user.score ?? 0;
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#010828]">
+    <div className="relative min-h-[100dvh] overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/Game-bg.png)' }}
+      />
+      
+      {/* Texture overlay */}
       <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.12]"
+        className="fixed inset-0 z-5 pointer-events-none opacity-[0.08]"
         style={{
           backgroundImage: "url(/texture.png)",
           backgroundSize: "200px 200px",
+          backgroundRepeat: "repeat",
         }}
       />
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#010828]/90 px-4 py-3 backdrop-blur-md">
+      <div
+        className="pointer-events-none fixed inset-0 z-10 opacity-25"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(111,255,0,0.06), transparent 70%)",
+        }}
+      />
+
+      <header className="sticky top-0 z-40 border-b border-white/10 liquid-glass px-4 py-3">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4">
-            <Link href="/dashboard" className="font-mono text-xs text-cyan-400 hover:underline">
+            <Link href="/dashboard" className="font-mono text-xs text-neon hover:underline">
               ← Dashboard
             </Link>
-            <Link href="/play" className="font-mono text-xs text-cream/60 hover:text-cream">
+            <Link href="/play" className="font-mono text-xs text-cream/80 hover:text-white">
               Arena
             </Link>
           </div>
-          <span className="rounded-full border border-cyan-500/30 px-3 py-1 font-mono text-[11px] text-cyan-200">
+          <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 font-mono text-[11px] text-neon">
             {displayScore} pts
           </span>
         </div>
       </header>
 
       <main className="relative z-10 mx-auto max-w-2xl px-4 py-8 pb-20">
+        <div className="liquid-glass rounded-[28px] border border-white/10 p-6 shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-8 backdrop-blur-xl [--glass-bg:rgba(0,0,0,0.65)] [--glass-bg-accent:rgba(255,255,255,0.02)]">
         {eligibleCount === 0 && (
           <p className="font-mono text-sm text-amber-200">
             No 4×4 puzzles for these filters. Choose &quot;All&quot; or widen filters.
@@ -256,7 +273,7 @@ function MindSnapInner() {
               type="button"
               disabled={eligibleCount === 0}
               onClick={startRound}
-              className="w-full rounded-[16px] bg-gradient-to-r from-cyan-500 to-blue-600 py-4 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(34,211,238,0.25)] hover:brightness-110 disabled:opacity-40"
+              className="w-full rounded-[14px] bg-neon py-4 font-grotesk uppercase tracking-wide text-[#010828] shadow-[0_0_28px_rgba(111,255,0,0.25)] hover:brightness-110 disabled:opacity-40"
             >
               Start round
             </button>
@@ -269,9 +286,9 @@ function MindSnapInner() {
               <p className="font-mono text-xs uppercase tracking-widest text-cream/50">
                 Memorize · {puzzle.department} · L{puzzle.difficulty}
               </p>
-              <p className="font-mono text-2xl tabular-nums text-cyan-400">{flashLeft}s</p>
+              <p className="font-mono text-2xl tabular-nums text-neon">{flashLeft}s</p>
             </div>
-            <p className="font-mono text-sm text-cream/80">{puzzle.hint}</p>
+            <p className="font-mono text-sm text-cream/90">{puzzle.hint}</p>
             <Grid4
               puzzle={puzzle}
               mode="flash"
@@ -305,9 +322,9 @@ function MindSnapInner() {
 
         {puzzle && phase === "results" && stats && (
           <div className="space-y-6">
-            <h2 className="font-grotesk text-2xl uppercase text-cream">Round result</h2>
-            <div className="liquid-glass rounded-[20px] border border-white/10 p-6">
-              <p className="font-mono text-4xl font-semibold tabular-nums text-cyan-400">
+            <h2 className="font-grotesk text-3xl uppercase text-neon">Round result</h2>
+            <div className="border-t border-white/10 pt-6">
+              <p className="font-mono text-5xl font-semibold tabular-nums text-neon">
                 {stats.score}
                 <span className="ml-2 text-base font-normal text-cream/50">points</span>
               </p>
@@ -329,7 +346,7 @@ function MindSnapInner() {
                 {puzzle.explanation}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3 sm:justify-center">
               <button
                 type="button"
                 onClick={() => {
@@ -337,20 +354,21 @@ function MindSnapInner() {
                   setPuzzle(null);
                   setStats(null);
                 }}
-                className="rounded-[12px] border border-white/20 px-5 py-3 font-mono text-sm text-cream hover:bg-white/10"
+                className="liquid-glass rounded-[12px] border border-white/20 px-5 py-3 font-grotesk uppercase text-cream hover:bg-white/10"
               >
                 Menu
               </button>
               <button
                 type="button"
                 onClick={startRound}
-                className="rounded-[12px] bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 font-grotesk uppercase text-[#010828]"
+                className="rounded-[12px] bg-neon px-5 py-3 font-grotesk uppercase text-[#010828] hover:brightness-110"
               >
                 Another puzzle
               </button>
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );
@@ -384,21 +402,21 @@ function Grid4({
             <button
               key={k}
               type="button"
-              disabled={mode === "flash"}
+              disabled={false}
               onClick={() => onCellClick(r, c)}
-              className={`flex min-h-[4.5rem] flex-col items-center justify-center rounded-xl border p-1.5 text-center transition sm:min-h-[5.25rem] ${
+              className={`group flex min-h-[4.5rem] flex-col items-center justify-center rounded-xl border p-1.5 text-center transition-all duration-300 sm:min-h-[5.25rem] backdrop-blur-md hover:-translate-y-1 hover:shadow-xl ${
                 mode === "recall"
                   ? isOk
-                    ? "border-emerald-500/60 bg-emerald-500/15"
+                    ? "liquid-glass border-neon [--glass-bg:rgba(111,255,0,0.15)] [--glass-bg-accent:rgba(111,255,0,0.05)] text-neon shadow-[0_0_20px_rgba(111,255,0,0.2)]"
                     : isBad
-                      ? "border-rose-500/60 bg-rose-500/15"
-                      : "border-white/15 bg-white/[0.04] active:bg-white/10"
-                  : "border-white/20 bg-white/[0.06]"
+                      ? "liquid-glass border-rose-500/60 [--glass-bg:rgba(244,63,94,0.15)] shadow-[0_0_20px_rgba(244,63,94,0.15)] text-rose-200"
+                      : "liquid-glass border-white/10 [--glass-bg:rgba(0,0,0,0.6)] text-cream shadow-md cursor-pointer hover:[--glass-bg:rgba(0,0,0,0.8)] hover:border-neon hover:shadow-[0_0_20px_rgba(111,255,0,0.15)] active:scale-95"
+                  : "liquid-glass border-cyan-500/30 [--glass-bg:rgba(6,182,212,0.15)] [--glass-bg-accent:rgba(6,182,212,0.05)] text-cyan-50 shadow-[0_0_20px_rgba(6,182,212,0.15)] cursor-default hover:[--glass-bg:rgba(6,182,212,0.25)] hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(6,182,212,0.4)]"
               }`}
             >
               <span
-                className={`line-clamp-4 w-full break-words font-mono text-[10px] leading-tight sm:text-xs ${
-                  showValue ? "text-cream" : "text-cream/90"
+                className={`line-clamp-4 w-full break-words font-mono text-[10px] leading-tight transition-all sm:text-xs ${
+                  showValue ? "text-cyan-100 font-medium group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" : "text-cream/90 group-hover:text-neon"
                 }`}
               >
                 {showValue
