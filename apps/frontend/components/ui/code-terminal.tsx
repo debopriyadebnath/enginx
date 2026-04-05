@@ -21,7 +21,7 @@ export function CodeTerminal({
   return (
     <div
       className={cn(
-        "liquid-glass overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
+        "liquid-glass overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl [--glass-bg:rgba(10,14,24,0.85)] [--glass-bg-accent:rgba(255,255,255,0.02)]",
         className
       )}
     >

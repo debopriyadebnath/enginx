@@ -377,7 +377,7 @@ function BugFinderInner() {
               />
             </CodeTerminal>
 
-            <p className="mt-5 font-mono text-[11px] uppercase tracking-wider text-cream/50">
+            <p className="mt-5 w-max rounded-full bg-black/40 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-cream/70 backdrop-blur-md">
               Pick the token for the blank
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -388,10 +388,10 @@ function BugFinderInner() {
                     key={opt}
                     type="button"
                     onClick={() => setSelected(opt)}
-                    className={`rounded-xl border px-3 py-3 font-mono text-sm transition ${
+                    className={`rounded-xl border px-3 py-3 font-mono text-sm transition backdrop-blur-md ${
                       active
-                        ? "liquid-glass border-[#6fff00] bg-[#6fff00]/25 text-[#b7ff8c] shadow-[0_0_20px_rgba(111,255,0,0.15)]"
-                        : "liquid-glass text-cream hover:bg-white/10"
+                        ? "liquid-glass border-neon [--glass-bg:rgba(111,255,0,0.15)] [--glass-bg-accent:rgba(111,255,0,0.05)] text-neon shadow-[0_0_20px_rgba(111,255,0,0.2)]"
+                        : "liquid-glass border-white/10 [--glass-bg:rgba(0,0,0,0.6)] [--glass-bg-accent:rgba(255,255,255,0.02)] text-cream shadow-xl hover:[--glass-bg:rgba(0,0,0,0.8)] hover:border-white/20"
                     }`}
                   >
                     {opt}
