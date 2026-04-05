@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "puzzles": [
+    {
+      "id": "cs_compile_pipeline_arr",
+      "title": "Compilation pipeline",
+      "department": "cs",
+      "mode": "arrange",
+      "description": "Drag blocks into the correct compiler order (left → right).",
+      "timeLimitSeconds": 90,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 40,
+        "correctEdgePoints": 0,
+        "timeBonusMax": 120,
+        "positionTolerancePx": 56,
+        "wrongEdgePenalty": 0,
+        "wrongPositionPenalty": 15
+      },
+      "shuffledNodes": [
+        { "id": "n1", "label": "IR", "position": { "x": 420, "y": 180 } },
+        { "id": "n2", "label": "Lexer", "position": { "x": 40, "y": 200 } },
+        { "id": "n3", "label": "Parser", "position": { "x": 260, "y": 40 } },
+        { "id": "n4", "label": "Codegen", "position": { "x": 120, "y": 320 } }
+      ],
+      "correctNodes": [
+        { "id": "n2", "label": "Lexer", "position": { "x": 40, "y": 180 }, "orderIndex": 0 },
+        { "id": "n3", "label": "Parser", "position": { "x": 220, "y": 180 }, "orderIndex": 1 },
+        { "id": "n1", "label": "IR", "position": { "x": 400, "y": 180 }, "orderIndex": 2 },
+        { "id": "n4", "label": "Codegen", "position": { "x": 580, "y": 180 }, "orderIndex": 3 }
+      ],
+      "shuffledEdges": [
+        { "id": "e1", "source": "n2", "target": "n3" },
+        { "id": "e2", "source": "n3", "target": "n1" },
+        { "id": "e3", "source": "n1", "target": "n4" }
+      ],
+      "correctEdges": [
+        { "id": "e1", "source": "n2", "target": "n3" },
+        { "id": "e2", "source": "n3", "target": "n1" },
+        { "id": "e3", "source": "n1", "target": "n4" }
+      ]
+    },
+    {
+      "id": "aiml_training_connect",
+      "title": "ML training loop",
+      "department": "aiml",
+      "mode": "connect",
+      "description": "Connect nodes to show forward pass → loss → backward → optimizer step.",
+      "timeLimitSeconds": 75,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 0,
+        "correctEdgePoints": 55,
+        "timeBonusMax": 100,
+        "positionTolerancePx": 8,
+        "wrongEdgePenalty": 25,
+        "wrongPositionPenalty": 0
+      },
+      "shuffledNodes": [
+        { "id": "a1", "label": "Forward", "position": { "x": 40, "y": 160 } },
+        { "id": "a2", "label": "Loss", "position": { "x": 260, "y": 160 } },
+        { "id": "a3", "label": "Backward", "position": { "x": 480, "y": 160 } },
+        { "id": "a4", "label": "Optimizer", "position": { "x": 700, "y": 160 } }
+      ],
+      "correctNodes": [
+        { "id": "a1", "label": "Forward", "position": { "x": 40, "y": 160 } },
+        { "id": "a2", "label": "Loss", "position": { "x": 260, "y": 160 } },
+        { "id": "a3", "label": "Backward", "position": { "x": 480, "y": 160 } },
+        { "id": "a4", "label": "Optimizer", "position": { "x": 700, "y": 160 } }
+      ],
+      "shuffledEdges": [],
+      "correctEdges": [
+        { "id": "ae1", "source": "a1", "target": "a2" },
+        { "id": "ae2", "source": "a2", "target": "a3" },
+        { "id": "ae3", "source": "a3", "target": "a4" }
+      ]
+    },
+    {
+      "id": "elec_signal_chain_arr",
+      "title": "Analog signal chain",
+      "department": "electronics",
+      "mode": "arrange",
+      "description": "Order blocks: sensor → amp → filter → ADC (top → bottom).",
+      "timeLimitSeconds": 80,
+      "layoutAxis": "y",
+      "scoring": {
+        "correctNodePoints": 45,
+        "correctEdgePoints": 0,
+        "timeBonusMax": 110,
+        "positionTolerancePx": 52,
+        "wrongEdgePenalty": 0,
+        "wrongPositionPenalty": 18
+      },
+      "shuffledNodes": [
+        { "id": "s1", "label": "ADC", "position": { "x": 200, "y": 40 } },
+        { "id": "s2", "label": "Sensor", "position": { "x": 40, "y": 260 } },
+        { "id": "s3", "label": "Amp", "position": { "x": 360, "y": 140 } },
+        { "id": "s4", "label": "Filter", "position": { "x": 120, "y": 120 } }
+      ],
+      "correctNodes": [
+        { "id": "s2", "label": "Sensor", "position": { "x": 200, "y": 40 }, "orderIndex": 0 },
+        { "id": "s3", "label": "Amp", "position": { "x": 200, "y": 140 }, "orderIndex": 1 },
+        { "id": "s4", "label": "Filter", "position": { "x": 200, "y": 240 }, "orderIndex": 2 },
+        { "id": "s1", "label": "ADC", "position": { "x": 200, "y": 340 }, "orderIndex": 3 }
+      ],
+      "shuffledEdges": [],
+      "correctEdges": []
+    },
+    {
+      "id": "maths_function_comp_connect",
+      "title": "Function composition",
+      "department": "maths",
+      "mode": "connect",
+      "description": "Connect f → g → h for h(g(f(x))).",
+      "timeLimitSeconds": 60,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 0,
+        "correctEdgePoints": 60,
+        "timeBonusMax": 90,
+        "positionTolerancePx": 8,
+        "wrongEdgePenalty": 30,
+        "wrongPositionPenalty": 0
+      },
+      "shuffledNodes": [
+        { "id": "m1", "label": "f(x)", "position": { "x": 60, "y": 180 } },
+        { "id": "m2", "label": "g(·)", "position": { "x": 280, "y": 180 } },
+        { "id": "m3", "label": "h(·)", "position": { "x": 500, "y": 180 } }
+      ],
+      "correctNodes": [
+        { "id": "m1", "label": "f(x)", "position": { "x": 60, "y": 180 } },
+        { "id": "m2", "label": "g(·)", "position": { "x": 280, "y": 180 } },
+        { "id": "m3", "label": "h(·)", "position": { "x": 500, "y": 180 } }
+      ],
+      "shuffledEdges": [],
+      "correctEdges": [
+        { "id": "me1", "source": "m1", "target": "m2" },
+        { "id": "me2", "source": "m2", "target": "m3" }
+      ]
+    },
+    {
+      "id": "cs_os_boot_hybrid",
+      "title": "Boot & schedule flow",
+      "department": "cs",
+      "mode": "hybrid",
+      "description": "Place nodes, then wire: Bootloader → Kernel → Init → Scheduler.",
+      "timeLimitSeconds": 100,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 35,
+        "correctEdgePoints": 35,
+        "timeBonusMax": 140,
+        "positionTolerancePx": 48,
+        "wrongEdgePenalty": 20,
+        "wrongPositionPenalty": 12
+      },
+      "shuffledNodes": [
+        { "id": "o1", "label": "Kernel", "position": { "x": 400, "y": 40 } },
+        { "id": "o2", "label": "Bootloader", "position": { "x": 40, "y": 260 } },
+        { "id": "o3", "label": "Init", "position": { "x": 320, "y": 260 } },
+        { "id": "o4", "label": "Scheduler", "position": { "x": 600, "y": 260 } }
+      ],
+      "correctNodes": [
+        { "id": "o2", "label": "Bootloader", "position": { "x": 40, "y": 180 }, "orderIndex": 0 },
+        { "id": "o1", "label": "Kernel", "position": { "x": 240, "y": 180 }, "orderIndex": 1 },
+        { "id": "o3", "label": "Init", "position": { "x": 440, "y": 180 }, "orderIndex": 2 },
+        { "id": "o4", "label": "Scheduler", "position": { "x": 640, "y": 180 }, "orderIndex": 3 }
+      ],
+      "shuffledEdges": [
+        { "id": "bad1", "source": "o1", "target": "o3" }
+      ],
+      "correctEdges": [
+        { "id": "oe1", "source": "o2", "target": "o1" },
+        { "id": "oe2", "source": "o1", "target": "o3" },
+        { "id": "oe3", "source": "o3", "target": "o4" }
+      ]
+    },
+    {
+      "id": "aiml_inference_arr",
+      "title": "Inference path",
+      "department": "aiml",
+      "mode": "arrange",
+      "description": "Order: Preprocess → Model → Postprocess → Deploy (left → right).",
+      "timeLimitSeconds": 85,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 42,
+        "correctEdgePoints": 0,
+        "timeBonusMax": 115,
+        "positionTolerancePx": 54,
+        "wrongEdgePenalty": 0,
+        "wrongPositionPenalty": 16
+      },
+      "shuffledNodes": [
+        { "id": "i1", "label": "Postprocess", "position": { "x": 40, "y": 40 } },
+        { "id": "i2", "label": "Preprocess", "position": { "x": 500, "y": 260 } },
+        { "id": "i3", "label": "Model", "position": { "x": 200, "y": 260 } },
+        { "id": "i4", "label": "Deploy", "position": { "x": 360, "y": 40 } }
+      ],
+      "correctNodes": [
+        { "id": "i2", "label": "Preprocess", "position": { "x": 40, "y": 180 }, "orderIndex": 0 },
+        { "id": "i3", "label": "Model", "position": { "x": 240, "y": 180 }, "orderIndex": 1 },
+        { "id": "i1", "label": "Postprocess", "position": { "x": 440, "y": 180 }, "orderIndex": 2 },
+        { "id": "i4", "label": "Deploy", "position": { "x": 640, "y": 180 }, "orderIndex": 3 }
+      ],
+      "shuffledEdges": [],
+      "correctEdges": []
+    },
+    {
+      "id": "elec_rectifier_connect",
+      "title": "AC → DC stages",
+      "department": "electronics",
+      "mode": "connect",
+      "description": "Wire transformer → rectifier → filter → regulator.",
+      "timeLimitSeconds": 70,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 0,
+        "correctEdgePoints": 50,
+        "timeBonusMax": 95,
+        "positionTolerancePx": 8,
+        "wrongEdgePenalty": 22,
+        "wrongPositionPenalty": 0
+      },
+      "shuffledNodes": [
+        { "id": "e1", "label": "Transformer", "position": { "x": 20, "y": 170 } },
+        { "id": "e2", "label": "Rectifier", "position": { "x": 240, "y": 170 } },
+        { "id": "e3", "label": "Filter", "position": { "x": 460, "y": 170 } },
+        { "id": "e4", "label": "Regulator", "position": { "x": 680, "y": 170 } }
+      ],
+      "correctNodes": [
+        { "id": "e1", "label": "Transformer", "position": { "x": 20, "y": 170 } },
+        { "id": "e2", "label": "Rectifier", "position": { "x": 240, "y": 170 } },
+        { "id": "e3", "label": "Filter", "position": { "x": 460, "y": 170 } },
+        { "id": "e4", "label": "Regulator", "position": { "x": 680, "y": 170 } }
+      ],
+      "shuffledEdges": [],
+      "correctEdges": [
+        { "id": "ee1", "source": "e1", "target": "e2" },
+        { "id": "ee2", "source": "e2", "target": "e3" },
+        { "id": "ee3", "source": "e3", "target": "e4" }
+      ]
+    },
+    {
+      "id": "bonus_data_pipe_hybrid",
+      "title": "ETL mini pipeline",
+      "department": "bonus",
+      "mode": "hybrid",
+      "description": "Align Extract → Transform → Load → Warehouse and fix the wires.",
+      "timeLimitSeconds": 95,
+      "layoutAxis": "x",
+      "scoring": {
+        "correctNodePoints": 32,
+        "correctEdgePoints": 32,
+        "timeBonusMax": 130,
+        "positionTolerancePx": 50,
+        "wrongEdgePenalty": 18,
+        "wrongPositionPenalty": 10
+      },
+      "shuffledNodes": [
+        { "id": "d1", "label": "Extract", "position": { "x": 300, "y": 300 } },
+        { "id": "d2", "label": "Transform", "position": { "x": 40, "y": 40 } },
+        { "id": "d3", "label": "Load", "position": { "x": 520, "y": 40 } },
+        { "id": "d4", "label": "Warehouse", "position": { "x": 200, "y": 120 } }
+      ],
+      "correctNodes": [
+        { "id": "d1", "label": "Extract", "position": { "x": 40, "y": 180 }, "orderIndex": 0 },
+        { "id": "d2", "label": "Transform", "position": { "x": 240, "y": 180 }, "orderIndex": 1 },
+        { "id": "d3", "label": "Load", "position": { "x": 440, "y": 180 }, "orderIndex": 2 },
+        { "id": "d4", "label": "Warehouse", "position": { "x": 640, "y": 180 }, "orderIndex": 3 }
+      ],
+      "shuffledEdges": [
+        { "id": "de_bad", "source": "d3", "target": "d1" }
+      ],
+      "correctEdges": [
+        { "id": "de1", "source": "d1", "target": "d2" },
+        { "id": "de2", "source": "d2", "target": "d3" },
+        { "id": "de3", "source": "d3", "target": "d4" }
+      ]
+    }
+  ]
+}
