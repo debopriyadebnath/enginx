@@ -10,6 +10,34 @@ function repoBackendData(): string {
 
 let cached: CodeChallenge[] | null = null;
 
+function isBlank(v: unknown): v is { id: string; correctAnswer: string } {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as Record<string, unknown>).id === "string" &&
+    typeof (v as Record<string, unknown>).correctAnswer === "string"
+  );
+}
+
+function isCodeChallenge(v: unknown): v is CodeChallenge {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.type === "string" &&
+    typeof o.difficulty === "string" &&
+    typeof o.concept === "string" &&
+    typeof o.title === "string" &&
+    typeof o.description === "string" &&
+    typeof o.codeTemplate === "string" &&
+    typeof o.explanation === "string" &&
+    Array.isArray(o.blanks) &&
+    (o.blanks as unknown[]).every(isBlank) &&
+    Array.isArray(o.options) &&
+    (o.options as unknown[]).every((x) => typeof x === "string")
+  );
+}
+
 export function loadCodeChallenges(): CodeChallenge[] {
   if (cached) return cached;
   const path = repoBackendData();
@@ -18,12 +46,25 @@ export function loadCodeChallenges(): CodeChallenge[] {
     cached = [];
     return cached;
   }
-  const raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
-  if (!Array.isArray(raw)) {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    console.error(`[bugFinderCodes] Failed to parse ${path}:`, e);
     cached = [];
     return cached;
   }
-  cached = raw as CodeChallenge[];
+  if (!Array.isArray(raw)) {
+    console.error(`[bugFinderCodes] Expected array, got ${typeof raw}`);
+    cached = [];
+    return cached;
+  }
+  const valid = (raw as unknown[]).filter(isCodeChallenge);
+  const skipped = raw.length - valid.length;
+  if (skipped > 0) {
+    console.warn(`[bugFinderCodes] Skipped ${skipped} malformed challenge(s)`);
+  }
+  cached = valid;
   return cached;
 }
 

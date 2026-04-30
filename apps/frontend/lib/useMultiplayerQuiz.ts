@@ -108,7 +108,14 @@ export function useMultiplayerQuiz(
   useEffect(() => {
     if (!socket) return;
     const onDisconnect = (reason: string) => {
-      if (phaseRef.current === "waiting_challenge") {
+      const current = phaseRef.current;
+      if (current === "playing") {
+        setPhase("aborted");
+        setRoomId(null);
+        setCurrentRound(null);
+        setDeadlineAt(null);
+        setErrorMessage(`Disconnected (${reason}). The match has ended.`);
+      } else if (current === "waiting_challenge") {
         setPhase("idle");
         setErrorMessage(
           `Disconnected (${reason}). Try again after reconnect.`
