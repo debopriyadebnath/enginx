@@ -1,0 +1,31 @@
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+.next/
+out/
+dist/
+build/
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+# ⚠️  Never commit real env files — they may contain private keys & tokens
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# .env.example is safe to commit (no real values)
+
+# ── OS / editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/settings.json
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+.turbo/
