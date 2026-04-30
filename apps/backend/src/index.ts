@@ -4,6 +4,16 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 config({ path: ".env" });
 
+if (
+  !process.env.CONVEX_URL?.trim() &&
+  !process.env.NEXT_PUBLIC_CONVEX_URL?.trim()
+) {
+  console.error(
+    "Missing required env var: CONVEX_URL or NEXT_PUBLIC_CONVEX_URL must be set"
+  );
+  process.exit(1);
+}
+
 import { createServer_ } from "./server.js";
 
 

@@ -53,6 +53,7 @@ function BugFinderInner() {
   const [feedback, setFeedback] = useState<{
     correct: boolean;
     pointsEarned: number;
+    saveError?: boolean;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [runTotal, setRunTotal] = useState(0);
@@ -85,6 +86,7 @@ function BugFinderInner() {
     const pointsEarned = pointsForBug(q, correct);
     const newStreak = correct ? streak + 1 : 0;
 
+    let saveError = false;
     try {
       await applyPoints({
         sessionToken: token,
@@ -92,13 +94,12 @@ function BugFinderInner() {
         streak: newStreak,
       });
     } catch {
-      setFeedback({ correct: false, pointsEarned: 0 });
-      setSubmitting(false);
-      return;
+      saveError = true;
     }
 
-    setStreak(newStreak);
-    setRunTotal((t) => t + pointsEarned);
+    const savedPoints = saveError ? 0 : pointsEarned;
+    setStreak(saveError ? streak : newStreak);
+    if (!saveError) setRunTotal((t) => t + pointsEarned);
     setResults((prev) => [
       ...prev,
       {
@@ -108,10 +109,10 @@ function BugFinderInner() {
         correct,
         correctAnswer: q.blanks[0]?.correctAnswer ?? "",
         explanation: q.explanation,
-        pointsEarned,
+        pointsEarned: savedPoints,
       },
     ]);
-    setFeedback({ correct, pointsEarned });
+    setFeedback({ correct, pointsEarned: savedPoints, saveError });
     setSubmitting(false);
   }, [
     token,
@@ -338,6 +339,11 @@ function BugFinderInner() {
             {feedback.pointsEarned > 0 ? (
               <p className="mt-1 font-mono text-sm text-cream/90">
                 +{feedback.pointsEarned} pts
+              </p>
+            ) : null}
+            {feedback.saveError ? (
+              <p className="mt-1 font-mono text-sm text-amber-400/80">
+                Points could not be saved — check your connection.
               </p>
             ) : null}
             <p className="mt-2 font-mono text-sm text-cream/60">
