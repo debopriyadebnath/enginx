@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CodeChallenge } from "./bugFinderTypes.js";
+import { seededShuffle } from "./packLoader.js";
 
 const __dirname = import.meta.dir;
 
@@ -66,26 +67,6 @@ export function loadCodeChallenges(): CodeChallenge[] {
   }
   cached = valid;
   return cached;
-}
-
-/** Deterministic shuffle — same seed → same order for both players. */
-export function seededShuffle<T>(items: T[], seed: string): T[] {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(31, h) + seed.charCodeAt(i);
-    h |= 0;
-  }
-  const a = [...items];
-  const rand = (idx: number) => {
-    h = Math.imul(h ^ idx, 2654435761);
-    h ^= h >>> 16;
-    return (h >>> 0) / 0xffffffff;
-  };
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rand(i) * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
-  }
-  return a;
 }
 
 export function pickBugFinderRound(

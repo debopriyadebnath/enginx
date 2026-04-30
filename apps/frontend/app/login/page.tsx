@@ -6,8 +6,8 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useSession } from "@/lib/session";
-
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const HERO_VIDEO =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
@@ -93,9 +93,12 @@ const Login = () => {
                 .value;
               const { token } = await signIn({ email, password });
               setToken(token);
+              toast.success("Welcome back!");
               router.replace("/dashboard");
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Sign in failed");
+              const msg = err instanceof Error ? err.message : "Sign in failed";
+              setError(msg);
+              toast.error(msg);
             } finally {
               setSubmitting(false);
             }
