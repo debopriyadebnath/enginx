@@ -29,10 +29,39 @@ import {
 
 const ANSWER_DISPLAY_TIMEOUT = 3000; // 3 seconds to show answer
 const NEXT_QUESTION_DELAY = 1000; // 1 second before next question
+const MAX_USERNAME_LENGTH = 30;
+
+function sanitizeUsername(raw: string | undefined, fallback: string): string {
+  const name = (raw ?? "").replace(/[<>"'&]/g, "").trim().slice(0, MAX_USERNAME_LENGTH);
+  return name || fallback;
+}
 
 interface RoomState {
   questionTimer?: NodeJS.Timeout;
   answerTimer?: NodeJS.Timeout;
+}
+
+const roomTimers = new Map<string, RoomState>();
+
+function clearRoomTimers(roomId: string): void {
+  const state = roomTimers.get(roomId);
+  if (state) {
+    clearTimeout(state.questionTimer);
+    clearTimeout(state.answerTimer);
+    roomTimers.delete(roomId);
+  }
+}
+
+const MAX_ANSWER_LENGTH = 500;
+const ANSWER_RATE_LIMIT_MS = 500;
+const lastAnswerTime = new Map<string, number>();
+
+function isAnswerRateLimited(socketId: string): boolean {
+  const now = Date.now();
+  const last = lastAnswerTime.get(socketId) ?? 0;
+  if (now - last < ANSWER_RATE_LIMIT_MS) return true;
+  lastAnswerTime.set(socketId, now);
+  return false;
 }
 
 function broadcastPresence(io: Server): void {
@@ -78,8 +107,7 @@ export const initializeSocket = (io: Server) => {
     socket.on("register_presence", (data: { username?: string }) => {
       try {
         if (!userId) return;
-        const username =
-          data?.username?.trim() || `Player-${userId.slice(-4)}`;
+        const username = sanitizeUsername(data?.username, `Player-${userId.slice(-4)}`);
         registerPresence(socket.id, userId, username);
         broadcastPresence(io);
       } catch (e) {
@@ -109,8 +137,7 @@ export const initializeSocket = (io: Server) => {
             callback({ ok: false, error: "auth" });
             return;
           }
-          const fromUsername =
-            data.username?.trim() || `Player-${userId.slice(-4)}`;
+          const fromUsername = sanitizeUsername(data.username, `Player-${userId.slice(-4)}`);
           const gameType: ChallengeGameType =
             data.gameType === "bug_finder" ? "bug_finder" : "quiz";
           registerPresence(socket.id, userId, fromUsername);
@@ -251,7 +278,9 @@ export const initializeSocket = (io: Server) => {
      */
     socket.on("submit-answer", (data: { roomId: string; answer: string }) => {
       try {
-        const { roomId, answer } = data;
+        if (isAnswerRateLimited(socket.id)) return;
+        const { roomId } = data;
+        const answer = String(data.answer ?? "").slice(0, MAX_ANSWER_LENGTH);
         const room = gameManager.getRoom(roomId);
 
         if (!room) {
@@ -305,6 +334,7 @@ export const initializeSocket = (io: Server) => {
      */
     socket.on("disconnect", () => {
       console.log(`[DISCONNECT] User ${userId} disconnected`);
+      lastAnswerTime.delete(socket.id);
       gameManager.removeFromQueue(socket.id);
       bugFinderGameManager.removeFromQueue(socket.id);
 
@@ -327,6 +357,7 @@ export const initializeSocket = (io: Server) => {
           io.to(room.id).emit("player-disconnected", {
             message: "Opponent disconnected",
           });
+          clearRoomTimers(room.id);
           gameManager.endGame(room.id);
         }
       });
@@ -335,6 +366,7 @@ export const initializeSocket = (io: Server) => {
           io.to(room.id).emit("player-disconnected", {
             message: "Opponent disconnected",
           });
+          clearRoomTimers(room.id);
           bugFinderGameManager.endGame(room.id);
         }
       });
@@ -378,16 +410,14 @@ export const initializeSocket = (io: Server) => {
       "submit-bug-answer",
       (data: { roomId: string; answer: string }) => {
         try {
+          if (isAnswerRateLimited(socket.id)) return;
+          const answer = String(data.answer ?? "").slice(0, MAX_ANSWER_LENGTH);
           const room = bugFinderGameManager.getRoom(data.roomId);
           if (!room) {
             socket.emit("error", { message: "Room not found" });
             return;
           }
-          bugFinderGameManager.recordAnswer(
-            data.roomId,
-            socket.id,
-            data.answer
-          );
+          bugFinderGameManager.recordAnswer(data.roomId, socket.id, answer);
           socket.emit("bf-answer-received", { message: "Answer recorded" });
         } catch (error) {
           console.error("[SUBMIT_BUG_ANSWER]", error);
@@ -464,8 +494,9 @@ function sendBugFinderQuestion(io: Server, roomId: string) {
     challenge: packChallengeWire(ch),
   });
 
-  const roomState: RoomState = {};
-  roomState.questionTimer = setTimeout(() => {
+  const bfState: RoomState = {};
+  roomTimers.set(roomId, bfState);
+  bfState.questionTimer = setTimeout(() => {
     room.gameState = "answer";
     const scores = bugFinderGameManager.calculateRoundScores(roomId);
     const correctToken = ch.blanks[0]?.correctAnswer ?? "";
@@ -486,7 +517,7 @@ function sendBugFinderQuestion(io: Server, roomId: string) {
     io.to(roomId).emit("bf-leaderboard-update", {
       leaderboard: bugFinderGameManager.getLeaderboard(roomId),
     });
-    roomState.answerTimer = setTimeout(() => {
+    bfState.answerTimer = setTimeout(() => {
       const more = bugFinderGameManager.nextQuestion(roomId);
       if (more) {
         sendBugFinderQuestion(io, roomId);
@@ -498,6 +529,7 @@ function sendBugFinderQuestion(io: Server, roomId: string) {
           message: "Bug finder match complete!",
         });
         setTimeout(() => {
+          clearRoomTimers(roomId);
           bugFinderGameManager.endGame(roomId);
         }, 5000);
       }
@@ -533,8 +565,9 @@ function sendQuestion(io: Server, roomId: string) {
   });
 
   // Set timer for answer submission
-  const roomState: RoomState = {};
-  roomState.questionTimer = setTimeout(() => {
+  const qState: RoomState = {};
+  roomTimers.set(roomId, qState);
+  qState.questionTimer = setTimeout(() => {
     room.gameState = "answer";
 
     const scores = gameManager.calculateRoundScores(roomId);
@@ -563,7 +596,7 @@ function sendQuestion(io: Server, roomId: string) {
     });
 
     // Move to next question or end game
-    roomState.answerTimer = setTimeout(() => {
+    qState.answerTimer = setTimeout(() => {
       const hasMoreQuestions = gameManager.nextQuestion(roomId);
 
       if (hasMoreQuestions) {
@@ -580,6 +613,7 @@ function sendQuestion(io: Server, roomId: string) {
 
         // Clean up room after a delay
         setTimeout(() => {
+          clearRoomTimers(roomId);
           gameManager.endGame(roomId);
         }, 5000);
       }

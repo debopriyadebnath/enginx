@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CodeChallenge } from "./bugFinderTypes.js";
+import { seededShuffle } from "./packLoader.js";
 
 const __dirname = import.meta.dir;
 
@@ -10,6 +11,34 @@ function repoBackendData(): string {
 
 let cached: CodeChallenge[] | null = null;
 
+function isBlank(v: unknown): v is { id: string; correctAnswer: string } {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as Record<string, unknown>).id === "string" &&
+    typeof (v as Record<string, unknown>).correctAnswer === "string"
+  );
+}
+
+function isCodeChallenge(v: unknown): v is CodeChallenge {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.type === "string" &&
+    typeof o.difficulty === "string" &&
+    typeof o.concept === "string" &&
+    typeof o.title === "string" &&
+    typeof o.description === "string" &&
+    typeof o.codeTemplate === "string" &&
+    typeof o.explanation === "string" &&
+    Array.isArray(o.blanks) &&
+    (o.blanks as unknown[]).every(isBlank) &&
+    Array.isArray(o.options) &&
+    (o.options as unknown[]).every((x) => typeof x === "string")
+  );
+}
+
 export function loadCodeChallenges(): CodeChallenge[] {
   if (cached) return cached;
   const path = repoBackendData();
@@ -18,33 +47,26 @@ export function loadCodeChallenges(): CodeChallenge[] {
     cached = [];
     return cached;
   }
-  const raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
-  if (!Array.isArray(raw)) {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    console.error(`[bugFinderCodes] Failed to parse ${path}:`, e);
     cached = [];
     return cached;
   }
-  cached = raw as CodeChallenge[];
+  if (!Array.isArray(raw)) {
+    console.error(`[bugFinderCodes] Expected array, got ${typeof raw}`);
+    cached = [];
+    return cached;
+  }
+  const valid = (raw as unknown[]).filter(isCodeChallenge);
+  const skipped = raw.length - valid.length;
+  if (skipped > 0) {
+    console.warn(`[bugFinderCodes] Skipped ${skipped} malformed challenge(s)`);
+  }
+  cached = valid;
   return cached;
-}
-
-/** Deterministic shuffle — same seed → same order for both players. */
-export function seededShuffle<T>(items: T[], seed: string): T[] {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(31, h) + seed.charCodeAt(i);
-    h |= 0;
-  }
-  const a = [...items];
-  const rand = (idx: number) => {
-    h = Math.imul(h ^ idx, 2654435761);
-    h ^= h >>> 16;
-    return (h >>> 0) / 0xffffffff;
-  };
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rand(i) * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
-  }
-  return a;
 }
 
 export function pickBugFinderRound(

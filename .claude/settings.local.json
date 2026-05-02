@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(xargs -I {} sh -c \"echo '=== {} ===' && grep -n 'console\\\\|catch' {}\")",
+      "Bash(grep -E \"\\\\.json$|\\\\.ts$|\\\\.js$\")",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('sonner'\\)\")",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

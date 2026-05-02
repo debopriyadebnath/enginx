@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { GameHud } from "@/components/game/GameHud";
 import { QuestionRenderer } from "@/components/game/QuestionRenderer";
+import { Badge } from "@/components/ui/badge";
 import { useAuthState } from "@/lib/auth";
 import { useAuthenticatedGameSocket } from "@/lib/socket";
 import { socketQuestionToPublicQuestion } from "@/lib/socketQuestionAdapter";
@@ -44,12 +46,47 @@ export default function MultiplayerQuizPage() {
   });
 
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const prevPhaseRef = useRef(phase);
+  const prevConnectedRef = useRef(connected);
+  const prevChallengeRef = useRef(incomingChallenge);
 
   useEffect(() => {
     if (user?.name || user?.email) {
       setDisplayName((n) => n || user.name || user.email || "");
     }
   }, [user?.name, user?.email]);
+
+  // Toast: socket connection changes
+  useEffect(() => {
+    if (prevConnectedRef.current === connected) return;
+    prevConnectedRef.current = connected;
+    if (connected) toast.success("Connected to game server");
+    else toast.warning("Disconnected from game server");
+  }, [connected]);
+
+  // Toast: incoming challenge notification (in addition to modal)
+  useEffect(() => {
+    if (!incomingChallenge || incomingChallenge === prevChallengeRef.current) return;
+    prevChallengeRef.current = incomingChallenge;
+    toast(`Challenge from ${incomingChallenge.fromUsername}`, {
+      description: "Check the challenge prompt below.",
+      duration: 8000,
+    });
+  }, [incomingChallenge]);
+
+  // Toast: match started
+  useEffect(() => {
+    if (prevPhaseRef.current === phase) return;
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = phase;
+    if (phase === "playing" && prev !== "playing") {
+      toast.success("Match started — good luck!");
+    } else if (phase === "ended") {
+      toast("Match finished", { description: "See the final standings below." });
+    } else if (phase === "aborted") {
+      toast.warning("Opponent disconnected — match ended.");
+    }
+  }, [phase]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -160,11 +197,14 @@ export default function MultiplayerQuizPage() {
         </p>
 
         {!connected && (
-          <p className="mt-4 rounded-[12px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 font-mono text-sm text-amber-100">
-            {socketConnectError
-              ? `Cannot reach game server: ${socketConnectError}`
-              : "Connecting to game server…"}
-          </p>
+          <div className="mt-4 flex items-center gap-3 rounded-[12px] border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <Badge variant="warning">{socketConnectError ? "Error" : "Connecting"}</Badge>
+            <p className="font-mono text-sm text-amber-100">
+              {socketConnectError
+                ? `Cannot reach game server: ${socketConnectError}`
+                : "Connecting to game server…"}
+            </p>
+          </div>
         )}
 
         {connected && errorMessage && (phase === "idle" || phase === "waiting_challenge") && (

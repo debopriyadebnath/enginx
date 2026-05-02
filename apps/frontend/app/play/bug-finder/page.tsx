@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import { CodeWithBlank } from "@/components/bug-finder/CodeWithBlank";
 import { CodeTerminal } from "@/components/ui/code-terminal";
+import { DifficultyBadge } from "@/components/ui/badge";
 import { useAuthState } from "@/lib/auth";
 import {
   type CodeChallenge,
@@ -20,6 +22,7 @@ import { useSession } from "@/lib/session";
 type ResultRow = {
   id: string;
   title: string;
+  difficulty: string;
   selected: string;
   correct: boolean;
   correctAnswer: string;
@@ -53,6 +56,7 @@ function BugFinderInner() {
   const [feedback, setFeedback] = useState<{
     correct: boolean;
     pointsEarned: number;
+    saveError?: boolean;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [runTotal, setRunTotal] = useState(0);
@@ -85,6 +89,7 @@ function BugFinderInner() {
     const pointsEarned = pointsForBug(q, correct);
     const newStreak = correct ? streak + 1 : 0;
 
+    let saveError = false;
     try {
       await applyPoints({
         sessionToken: token,
@@ -92,26 +97,27 @@ function BugFinderInner() {
         streak: newStreak,
       });
     } catch {
-      setFeedback({ correct: false, pointsEarned: 0 });
-      setSubmitting(false);
-      return;
+      saveError = true;
+      toast.error("Points couldn't be saved — check your connection.");
     }
 
-    setStreak(newStreak);
-    setRunTotal((t) => t + pointsEarned);
+    const savedPoints = saveError ? 0 : pointsEarned;
+    setStreak(saveError ? streak : newStreak);
+    if (!saveError) setRunTotal((t) => t + pointsEarned);
     setResults((prev) => [
       ...prev,
       {
         id: q.id,
         title: q.title,
+        difficulty: q.difficulty,
         selected,
         correct,
         correctAnswer: q.blanks[0]?.correctAnswer ?? "",
         explanation: q.explanation,
-        pointsEarned,
+        pointsEarned: savedPoints,
       },
     ]);
-    setFeedback({ correct, pointsEarned });
+    setFeedback({ correct, pointsEarned: savedPoints, saveError });
     setSubmitting(false);
   }, [
     token,
@@ -126,10 +132,11 @@ function BugFinderInner() {
   const advance = useCallback(() => {
     if (index + 1 >= questions.length) {
       setPhase("done");
+      toast.success(`Run complete! ${runTotal} pts earned`);
       return;
     }
     setIndex((i) => i + 1);
-  }, [index, questions.length]);
+  }, [index, questions.length, runTotal]);
 
   if (isLoading || !isAuthenticated || user === undefined) {
     return (
@@ -220,6 +227,7 @@ function BugFinderInner() {
                   >
                     {row.correct ? "Correct" : "Miss"}
                   </span>
+                  <DifficultyBadge difficulty={row.difficulty} />
                   {row.pointsEarned > 0 ? (
                     <span className="ml-auto font-mono text-xs text-neon">
                       +{row.pointsEarned}
@@ -335,11 +343,14 @@ function BugFinderInner() {
             <p className="font-grotesk text-lg uppercase text-cream">
               {feedback.correct ? "Correct" : "Not quite"}
             </p>
-            {feedback.pointsEarned > 0 ? (
-              <p className="mt-1 font-mono text-sm text-cream/90">
-                +{feedback.pointsEarned} pts
-              </p>
-            ) : null}
+            <div className="mt-2 flex items-center gap-2">
+              {feedback.pointsEarned > 0 && (
+                <span className="font-mono text-sm text-cream/90">
+                  +{feedback.pointsEarned} pts
+                </span>
+              )}
+              {q && <DifficultyBadge difficulty={q.difficulty} />}
+            </div>
             <p className="mt-2 font-mono text-sm text-cream/60">
               Full breakdown after the last challenge.
             </p>
@@ -359,9 +370,10 @@ function BugFinderInner() {
         {!feedback ? (
           <>
             <div className="mb-4">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-cream/45">
-                {q.concept} · {q.difficulty}
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-cream/45">{q.concept}</span>
+                <DifficultyBadge difficulty={q.difficulty} />
+              </div>
               <h1 className="font-grotesk mt-1 text-2xl uppercase leading-tight text-cream sm:text-3xl">
                 {q.title}
               </h1>

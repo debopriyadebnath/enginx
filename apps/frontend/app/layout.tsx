@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Anton, Condiment } from "next/font/google"; // Import custom fonts
+import { Toaster } from "sonner";
 import "./globals.css";
 import { ConvexClientProvider } from "./providers";
 import { getConvexUrlFromEnvLocalFile } from "@/lib/readConvexUrl.server";
@@ -46,6 +47,20 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ConvexClientProvider convexUrl={convexUrl}>
           {children}
+          <Toaster
+            position="top-right"
+            theme="dark"
+            toastOptions={{
+              style: {
+                background: "#0d1a3a",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#e8eeff",
+                fontFamily: "var(--font-geist-mono), monospace",
+                fontSize: "13px",
+                borderRadius: "14px",
+              },
+            }}
+          />
         </ConvexClientProvider>
       </body>
     </html>
