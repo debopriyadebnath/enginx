@@ -29,8 +29,8 @@ const NAV_ITEMS: {
 }[] = [
   { icon: Gamepad2, label: "ARENA", active: true, scrollToQuiz: true },
   { icon: Mic, label: "VOICE HR", active: false, href: "/interview" },
-  { icon: ClipboardList, label: "QUESTS", active: false },
-  { icon: Trophy, label: "COMPETE", active: false },
+  { icon: ClipboardList, label: "QUESTS", active: false, href: "/quests" },
+  { icon: Trophy, label: "COMPETE", active: false, href: "/compete" },
   { icon: Radio, label: "FEED", active: false },
   { icon: Users, label: "GROUP PLAY", active: false },
   { icon: Plus, label: "MORE", active: false },
@@ -85,9 +85,9 @@ const GAMES: Record<Category, { cursive: string; cards: GameCard[] }> = {
         mode: 'SOLO',
         scrollTo: 'bug-finder',
       },
-      { title: 'STRUCT PAD', desc: 'Coming soon — structs and memory layout quick checks.', icon: Layers, mode: 'SOLO' },
-      { title: 'BIG-O SPRINT', desc: 'Coming soon — complexity drills against the clock.', icon: BarChart2, mode: 'SOLO' },
-      { title: 'BIT TWIDDLER', desc: 'Coming soon — masks, shifts, and bitwise puzzles.', icon: Cpu, mode: 'SOLO' },
+      { title: 'STRUCT PAD', desc: 'C struct sizing — predict sizeof() with padding and alignment rules.', icon: Layers, mode: 'SOLO', href: '/play/struct-pad' },
+      { title: 'BIG-O SPRINT', desc: 'Identify time complexity from code snippets against a 12-second timer.', icon: BarChart2, mode: 'SOLO', href: '/play/big-o-sprint' },
+      { title: 'BIT TWIDDLER', desc: 'Evaluate bitwise expressions — AND, OR, XOR, shifts, and bit tricks.', icon: Cpu, mode: 'SOLO', href: '/play/bit-twiddler' },
     ],
   },
   ELECTRONICS: {
@@ -400,6 +400,33 @@ const Home = () => {
                   </span>
                   <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
                 </Link>
+                <Link
+                  href="/play/big-o-sprint"
+                  className="liquid-glass relative [--glass-border-start:rgba(111,255,0,0.4)] [--glass-bg:rgba(111,255,0,0.03)] [--glass-bg-accent:rgba(111,255,0,0.07)] rounded-[20px] px-6 py-5 flex-1 min-w-[140px] flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] text-left group"
+                >
+                  <span className="font-grotesk text-[24px] text-neon group-hover:drop-shadow-[0_0_8px_rgba(111,255,0,0.5)] transition-all">
+                    BIG-O
+                  </span>
+                  <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
+                </Link>
+                <Link
+                  href="/play/bit-twiddler"
+                  className="liquid-glass relative [--glass-border-start:rgba(183,36,255,0.5)] [--glass-bg:rgba(183,36,255,0.04)] [--glass-bg-accent:rgba(183,36,255,0.08)] rounded-[20px] px-6 py-5 flex-1 min-w-[140px] flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] text-left group"
+                >
+                  <span className="font-grotesk text-[24px] text-purple-400 group-hover:drop-shadow-[0_0_8px_rgba(183,36,255,0.5)] transition-all">
+                    BITS
+                  </span>
+                  <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
+                </Link>
+                <Link
+                  href="/play/struct-pad"
+                  className="liquid-glass relative [--glass-border-start:rgba(56,189,248,0.4)] [--glass-bg:rgba(56,189,248,0.03)] [--glass-bg-accent:rgba(56,189,248,0.07)] rounded-[20px] px-6 py-5 flex-1 min-w-[140px] flex items-center justify-between hover:bg-white/10 transition-all hover:scale-[1.01] text-left group"
+                >
+                  <span className="font-grotesk text-[24px] text-sky-400 group-hover:drop-shadow-[0_0_8px_rgba(56,189,248,0.5)] transition-all">
+                    STRUCT
+                  </span>
+                  <ChevronRight className="text-cream/50 group-hover:translate-x-1 transition-transform" size={24} />
+                </Link>
               </div>
             </motion.div>
 
@@ -633,8 +660,8 @@ const Home = () => {
         {[
           { icon: Gamepad2, label: "Arena", active: true, scrollToQuiz: true },
           { icon: Mic, label: "Voice", href: "/interview" as const },
-          { icon: ClipboardList, label: "Quests", active: false },
-          { icon: Trophy, label: "Compete", active: false },
+          { icon: ClipboardList, label: "Quests", href: "/quests" as const },
+          { icon: Trophy, label: "Compete", href: "/compete" as const },
         ].map((item) => {
           const Icon = item.icon;
           if ("href" in item && item.href) {

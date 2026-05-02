@@ -6,7 +6,8 @@
       "Bash(grep -E \"\\\\.json$|\\\\.ts$|\\\\.js$\")",
       "Bash(npm install *)",
       "Bash(node -e \"require\\('sonner'\\)\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -5 {}')"
     ]
   }
 }
